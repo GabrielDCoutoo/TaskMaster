@@ -10,7 +10,7 @@ Projeto de colaboração entre estudantes do DETI para âmbito da disciplina EGS
 | 104179 | EDUARDO ALVES | eduardoalves@ua.pt |
 | 98466 | RAFAEL SANTOS | rafaelmsantos@ua.pt |
 | 103709 | RUI CAMPOS | ruigabriel2@ua.pt |
-| 103270 | GABRIEL COUTO | XXX |
+| 103270 | GABRIEL COUTO | gabrielcouto@ua.pt |
 | XXXXXX | INÊS SOARES | ines.azevedo.soares@ua.pt |
 | XXXXXX | VANESSA MELO | vanessa.magalhaes@ua.pt |
 | XXXXXX | PAUL MARTINS | paul.martins@ua.pt |
