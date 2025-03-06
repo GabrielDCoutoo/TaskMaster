@@ -1,15 +1,16 @@
 from flask import Flask, request, jsonify, redirect, session, url_for
 from authlib.integrations.flask_client import OAuth
-from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 import datetime
 import os
 
+from sqlalchemy.orm import Session
+from database import SessionLocal
+from models import User  # Importar a classe correta da BD
+
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
-db = SQLAlchemy(app)
 
 # Configuração OAuth
 app.config['OAUTH_CREDENTIALS'] = {
@@ -30,15 +31,13 @@ ua_oauth = oauth.register(
     client_kwargs={'scope': 'profile email'},
 )
 
-# Modelo de utilizador
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
-    password_hash = db.Column(db.String(100), nullable=False)
-    nfc_uid = db.Column(db.String(20), unique=True, nullable=True)  # UID do cartão NFC
-
-def create_database():
-    db.create_all()
+# Dependência para obter sessão da Base de Dados
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 @app.route('/')
 def home():
@@ -49,10 +48,18 @@ def home():
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
+    db: Session = next(get_db())  # Obter sessão da BD
+
     hashed_password = generate_password_hash(data['password'], method='sha256')
-    new_user = User(username=data['username'], password_hash=hashed_password, nfc_uid=data.get('nfc_uid'))
-    db.session.add(new_user)
-    db.session.commit()
+    new_user = User(
+        name=data['name'], 
+        email=data['email'], 
+        total_points=0  # Campo existente na BD
+    )
+    db.add(new_user)
+    db.commit()
+    db.close()
+
     return jsonify({'message': 'User registered successfully!'}), 201
 
 @app.route('/login')
@@ -63,33 +70,19 @@ def login():
 def callback():
     token = ua_oauth.authorize_access_token()
     user_info = ua_oauth.get(app.config['OAUTH_CREDENTIALS']['userinfo_endpoint']).json()
-    user = User.query.filter_by(username=user_info.get("email")).first()
+    
+    db: Session = next(get_db())  # Obter sessão da BD
+    user = db.query(User).filter_by(email=user_info.get("email")).first()
+    
     if not user:
-        user = User(username=user_info.get("email"))
-        db.session.add(user)
-        db.session.commit()
+        user = User(name=user_info.get("name"), email=user_info.get("email"), total_points=0)
+        db.add(user)
+        db.commit()
+    
     session['user'] = user_info
+    db.close()
+    
     return jsonify({'message': 'Login bem-sucedido!', 'token': token})
-
-@app.route('/multi-auth', methods=['POST'])
-def multi_auth():
-    data = request.get_json()
-    nfc_uid = data.get("nfc_uid")
-    token = data.get("token")
-    
-    # Validação via NFC
-    user_nfc = User.query.filter_by(nfc_uid=nfc_uid).first()
-    
-    # Validação via OAuth
-    try:
-        token_data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
-        user_oauth = User.query.filter_by(username=token_data['username']).first()
-    except:
-        user_oauth = None
-    
-    if user_nfc and user_oauth and user_nfc.username == user_oauth.username:
-        return jsonify({'message': f'Autenticação combinada bem-sucedida para {user_nfc.username}'}), 200
-    return jsonify({'message': 'Autenticação falhou!'}), 401
 
 @app.route('/protected', methods=['GET'])
 def protected():
@@ -108,6 +101,4 @@ def logout():
     return redirect(url_for('home'))
 
 if __name__ == '__main__':
-    with app.app_context():
-        create_database()
     app.run(debug=True)
