@@ -55,7 +55,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = User(name=user.name, email=user.email, total_points=0)
     db.add(db_user)
     db.commit()
-    return {"message": "User created successfully"}
+    return {"message": "Utilizador criado com sucesso!"}
 
 # Atualiza um utilizador
 @app.patch("/v1/users/{user_id}/")
@@ -63,14 +63,14 @@ def update_user(user_id: int, user: UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.id == user_id).first()
 
     if not db_user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado!")
 
     db_user.name = user.name
     db_user.email = user.email
 
     db.commit()
 
-    return {"message": "User updated successfully"}
+    return {"message": "Utilizador actualizado com sucesso!"}
 
 
 # Remove um utilizador à escolha com base no ID de utilizador
@@ -78,14 +78,14 @@ def update_user(user_id: int, user: UserCreate, db: Session = Depends(get_db)):
 def remove_user(user_id: int, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.id == user_id).first()
     if db_user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado!")
     try:
         db.delete(db_user)
         db.commit()
-        return {"message": "User removed successfully"}
+        return {"message": "Utilizador removido com sucesso!"}
     except exc.SQLAlchemyError:
         db.rollback()
-        raise HTTPException(status_code=500, detail="An error occurred while removing the user")
+        raise HTTPException(status_code=500, detail="Um erro ocorreu enquanto o utilizador era removido!")
 
 # Retorna todos os utilizadores presentes na base de dados em formato de rank, atualizado após recomendação do professor de não usar um get á parte para o ranking e juntar tudo no get_users
 @app.get("/v1/users/")
@@ -123,14 +123,14 @@ def add_points(user_id: int, points: int, message: str, db: Session = Depends(ge
     
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado!")
     
     new_point = Point(user_id=user_id, points_change=points, message=message)
     db.add(new_point)
     user.total_points += points
     db.commit()
     
-    return {"message": "Points added successfully", "total_points": user.total_points}
+    return {"message": "Pontos atribuidos com sucesso!", "total_points": user.total_points}
 
 
 # Remove pontos do utilizador
@@ -141,14 +141,14 @@ def remove_points(user_id: int, points: int, message: str, db: Session = Depends
     
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado!")
     
     new_point = Point(user_id=user_id, points_change=-abs(points), message=message)
     db.add(new_point)
     user.total_points = max(0, user.total_points - abs(points))
     db.commit()
     
-    return {"message": "Points removed successfully", "total_points": user.total_points}
+    return {"message": "Pontos removidos com sucesso!", "total_points": user.total_points}
 
 # Histórico de pontos de um utilizador, onde se sabe quantos pontos recebou ou lhe foram retirados e em que dia.
 @app.get("/v1/points/history/{user_id}")
@@ -161,7 +161,7 @@ def get_user_points_history(
     try:
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(status_code=404, detail="Utilizador não encontrado!")
 
         # Obter todos os resultados antes da paginação
         total_results = db.query(Point).filter(Point.user_id == user_id).count()
@@ -213,7 +213,7 @@ def generate_api_key(user_id: int, db: Session = Depends(get_db)):
 
     return {"api_key": new_api_key}
 
-@app.get("/v1/users/{user_id}//validate-api-key")
+@app.get("/v1/validate-api-key")
 async def validate_api_key(api_key: str, db: Session = Depends(get_db)):
     
     # Verifica se a chave de API é válida e retorna o ID do utilizador correspondente.
