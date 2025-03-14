@@ -34,4 +34,6 @@ pip install flask authlib
 
 Finally:
 python3 auth.py
- 
+
+## Composer
+run npm install to install omdules and dependencies
