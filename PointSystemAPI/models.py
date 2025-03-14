@@ -10,6 +10,7 @@ class User(Base):
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
     total_points = Column(Integer, default=0, nullable=False)
+    api_key = Column(String, unique=True, nullable=True)
 
     # Relação que relaciona com o historial de pontos
     points_history = relationship("Point", back_populates="user", cascade="all, delete-orphan")
@@ -25,3 +26,4 @@ class Point(Base):
 
     # Relação que relaciona com o utilizador
     user = relationship("User", back_populates="points_history")
+

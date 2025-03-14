@@ -9,6 +9,7 @@ import models
 from models import User, Point
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+import secrets
 
 app = FastAPI()
 
@@ -196,3 +197,29 @@ def get_user_points_history(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+    
+@app.post("/v1/generate-api-key")
+def generate_api_key(user_id: int, db: Session = Depends(get_db)):
+    # Gera uma nova chave de API para um utilizador, substituindo a anterior.
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
+
+    new_api_key = secrets.token_hex(32)  # Gera uma chave segura
+    user.api_key = new_api_key  # Substitui a chave antiga
+    db.commit()
+    db.refresh(user)
+
+    return {"api_key": new_api_key}
+
+@app.get("/v1/users/{user_id}//validate-api-key")
+async def validate_api_key(api_key: str, db: Session = Depends(get_db)):
+    
+    # Verifica se a chave de API é válida e retorna o ID do utilizador correspondente.
+    
+    user = db.query(User).filter(User.api_key == api_key).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="API key inválida.")
+
+    return {"valid": True, "user_id": user.id}
