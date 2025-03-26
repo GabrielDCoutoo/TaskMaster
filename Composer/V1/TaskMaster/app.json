@@ -19,7 +19,6 @@
           "android.permission.NFC"
         ]
       },
-      "googleServicesFile": "./google-services.json",
       "package": "com.mycorp.myapp"
     },
     "web": {
@@ -58,7 +57,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "notificacoes-egs2025"
+        "projectId": "7921658e-1237-4e49-b75d-0714cbd940c2"
       }
     }
   }

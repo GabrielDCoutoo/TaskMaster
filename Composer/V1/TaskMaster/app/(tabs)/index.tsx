@@ -1,11 +1,31 @@
-import { Image, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
+import { Image, StyleSheet, TouchableOpacity, View, Text, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router'; // Import useRouter
 import ParallaxScrollView from '@/components/ParallaxScrollView';
-import React from 'react';
-
+import React, { useEffect, useState } from 'react';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+import * as Device from 'expo-device';
 
 export default function HomeScreen() {
   const router = useRouter(); // Get the navigation router
+  const [expoToken, setExpoToken] = useState('');
+  const [status, setStatus] = useState('A iniciar...');
+
+  useEffect(() => {
+    setup();
+
+    // 🔔 Listener para notificação recebida com a app aberta
+    const subscription = Notifications.addNotificationReceivedListener(notification => {
+      Alert.alert(
+        '📬 Notificação Recebida',
+        `Título: ${notification.request.content.title}\nMensagem: ${notification.request.content.body}`
+      );
+    });
+
+    return () => {
+      subscription.remove(); // Limpa o listener ao sair
+    };
+  }, []);
 
   // Function to handle the API request using fetch
   const handleApiRequest = async () => {
@@ -32,6 +52,58 @@ export default function HomeScreen() {
     }
   };
 
+  async function setup() {
+    try {
+      if (!Device.isDevice) {
+        Alert.alert('Erro', 'Notificações só funcionam em dispositivos reais');
+        setStatus('Dispositivo não suportado');
+        return;
+      }
+
+      // 👉 Pedir permissões
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+
+      if (finalStatus !== 'granted') {
+        Alert.alert('Permissão recusada');
+        setStatus('Permissão recusada');
+        return;
+      }
+
+      // 👉 Obter token Expo
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+      });
+
+      const token = tokenData?.data || '';
+      if (token) {
+        setExpoToken(token);
+        setStatus('Token obtido com sucesso!');
+        console.log('Expo Token:', token);
+      } else {
+        setStatus('Falha ao obter token');
+      }
+
+      // 🔧 Configurar canal Android
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'default',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#FF231F7C',
+        });
+      }
+    } catch (err) {
+      console.error('Erro ao configurar notificações:', err);
+      setStatus('Erro inesperado');
+    }
+  }
+
   
   
 
@@ -57,9 +129,14 @@ export default function HomeScreen() {
             <Image source={require('@/assets/images/github.png')} style={styles.buttonImage} />
             <Text style={styles.buttonText}>GitHub</Text>
           </TouchableOpacity>
+          <Text style={styles.label}>Token do Dispositivo:</Text>
+            <Text style={styles.code}>
+              {expoToken || 'A obter token...'}
+            </Text>
         </View>
       </View>
     </ParallaxScrollView>
+    
   );
 }
 
@@ -78,11 +155,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  label: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 16,
+  },
   buttonGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     width: '90%',
+  },
+  code: {
+    fontSize: 14,
+    color: '#333',
+    backgroundColor: '#eaeaea',
+    padding: 8,
+    borderRadius: 5,
+    marginTop: 4,
   },
   button: {
     backgroundColor: '#03A9F4',
