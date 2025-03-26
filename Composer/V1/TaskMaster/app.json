@@ -15,9 +15,12 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff",
-        "permissions": ["android.permission.NFC"]
-
-      }
+        "permissions": [
+          "android.permission.NFC"
+        ]
+      },
+      "googleServicesFile": "./google-services.json",
+      "package": "com.mycorp.myapp"
     },
     "web": {
       "bundler": "metro",
@@ -34,10 +37,29 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      "expo-secure-store",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "@react-native-firebase/crashlytics",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static",
+            "googleServicesFile": "./GoogleService-Info.plist",
+            "bundleIdentifier": "com.mycorp.myapp"
+          }
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "notificacoes-egs2025"
+      }
     }
   }
 }

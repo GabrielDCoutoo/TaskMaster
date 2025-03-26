@@ -3,20 +3,47 @@ import { useRouter } from 'expo-router'; // Import useRouter
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import React from 'react';
 
+
 export default function HomeScreen() {
   const router = useRouter(); // Get the navigation router
+
+  // Function to handle the API request using fetch
+  const handleApiRequest = async () => {
+    try {
+      const response = await fetch('http://192.168.1.190:8000/generate_api_key', {
+        method: 'POST', // HTTP method
+        headers: {
+          'Content-Type': 'application/json', // Indicate that we're sending JSON
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const data = await response.json(); // Parse the JSON response
+      console.log('Generated API Key:', data.api_key);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('Error generating API key:', error.message);
+      } else {
+        console.error('An unknown error occurred:', error);
+      }
+    }
+  };
+
+  
+  
 
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: 'transparent', dark: 'transparent' }}
-      headerImage={
-        <Image source={require('@/assets/images/header.png')} style={styles.reactLogo} />
-      }>
+      headerImage={<Image source={require('@/assets/images/header.png')} style={styles.reactLogo} />}>
       <View style={styles.container}>
         <View style={styles.buttonGrid}>
-          <TouchableOpacity style={styles.button} onPress={() => console.log('Completed Tasks Pressed')}>
+          <TouchableOpacity style={styles.button} onPress={handleApiRequest}>
             <Image source={require('@/assets/images/completed_tasks.png')} style={styles.buttonImage} />
-            <Text style={styles.buttonText}>Completed Tasks</Text>
+            <Text style={styles.buttonText}>API Request</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.button} onPress={() => router.push('/screens/selectTasksScreen')}>
             <Image source={require('@/assets/images/list_of_tasks.png')} style={styles.buttonImage} />
@@ -26,7 +53,7 @@ export default function HomeScreen() {
             <Image source={require('@/assets/images/select_tasks.png')} style={styles.buttonImage} />
             <Text style={styles.buttonText}>Select Tasks</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={() => router.push('/screens/githubScreen')}> 
+          <TouchableOpacity style={styles.button} onPress={() => router.push('/screens/githubScreen')}>
             <Image source={require('@/assets/images/github.png')} style={styles.buttonImage} />
             <Text style={styles.buttonText}>GitHub</Text>
           </TouchableOpacity>
@@ -41,7 +68,7 @@ const styles = StyleSheet.create({
     height: 150,
     width: 420,
     bottom: 70,
-    top:50,
+    top: 50,
     left: 0,
     position: 'absolute',
     backgroundColor: '#121212',
@@ -82,3 +109,5 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
 });
+
+

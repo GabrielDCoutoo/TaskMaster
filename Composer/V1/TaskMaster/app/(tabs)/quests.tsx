@@ -88,7 +88,7 @@ const QuestsTab = () => {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop:0,
+    marginTop:40,
     flex: 1,
     paddingTop: 20,
     paddingHorizontal: 16,
