@@ -11,9 +11,9 @@ Projeto de colaboração entre estudantes do DETI para âmbito da disciplina EGS
 | 98466 | RAFAEL SANTOS | rafaelmsantos@ua.pt |
 | 103709 | RUI CAMPOS | ruigabriel2@ua.pt |
 | 103270 | GABRIEL COUTO | gabrielcouto@ua.pt |
-| XXXXXX | INÊS SOARES | ines.azevedo.soares@ua.pt |
-| XXXXXX | VANESSA MELO | vanessa.magalhaes@ua.pt |
-| XXXXXX | PAUL MARTINS | paul.martins@ua.pt |
+| 125714 | INÊS SOARES | ines.azevedo.soares@ua.pt |
+| 119895 | VANESSA MELO | vanessa.magalhaes@ua.pt |
+| 124544 | PAUL MARTINS | paul.martins@ua.pt |
 
 ### Supervisores
 | Nome | Email |
@@ -34,4 +34,6 @@ pip install flask authlib
 
 Finally:
 python3 auth.py
- 
+
+## Composer
+run npm install to install omdules and dependencies
