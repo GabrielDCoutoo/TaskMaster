@@ -1,14 +1,15 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from sqlalchemy import exc, desc, func
 from sqlalchemy.future import select
 from sqlalchemy.orm import Session
 from database import engine, SessionLocal
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import List
 import models
 from models import User, Point
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+import secrets
 
 app = FastAPI()
 
@@ -23,7 +24,7 @@ def get_db():
 # Modelos da API
 class UserCreate(BaseModel):
     name: str
-    email: str
+    email: EmailStr
 
 class PointCreate(BaseModel):
     user_id: int
@@ -49,104 +50,53 @@ def read_root():
     return RedirectResponse(url="/docs")
 
 # Cria um utilizador
-@app.post("/users/")
+@app.post("/v1/users/")
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = User(name=user.name, email=user.email, total_points=0)
     db.add(db_user)
     db.commit()
-    return {"message": "User created successfully"}
+    return {"message": "Utilizador criado com sucesso!"}
+
+# Atualiza um utilizador
+@app.patch("/v1/users/{user_id}/")
+def update_user(user_id: int, user: UserCreate, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.id == user_id).first()
+
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado!")
+
+    db_user.name = user.name
+    db_user.email = user.email
+
+    db.commit()
+
+    return {"message": "Utilizador actualizado com sucesso!"}
+
 
 # Remove um utilizador à escolha com base no ID de utilizador
-@app.delete("/users/{user_id}")
+@app.delete("/v1/users/{user_id}")
 def remove_user(user_id: int, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.id == user_id).first()
     if db_user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado!")
     try:
         db.delete(db_user)
         db.commit()
-        return {"message": "User removed successfully"}
+        return {"message": "Utilizador removido com sucesso!"}
     except exc.SQLAlchemyError:
         db.rollback()
-        raise HTTPException(status_code=500, detail="An error occurred while removing the user")
+        raise HTTPException(status_code=500, detail="Um erro ocorreu enquanto o utilizador era removido!")
 
-# Retorna todos os utilizadores presentes na base de dados
-@app.get("/users/")
+# Retorna todos os utilizadores presentes na base de dados em formato de rank, atualizado após recomendação do professor de não usar um get á parte para o ranking e juntar tudo no get_users
+@app.get("/v1/users/")
 def get_users(db: Session = Depends(get_db)):
-    users = db.query(User).all()
-    return {"users": users}
-
-# Adiciona pontos ao utilizador
-@app.post("/points/add/")
-def add_points(point_data: PointCreate, db: Session = Depends(get_db)):
-
-    if point_data.points_change <= 0:
-        raise HTTPException(status_code=400, detail="Pontos a atribuir têm que ter um valor positivo")
-
-    user = db.query(User).filter(User.id == point_data.user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    new_point = Point(user_id=point_data.user_id, points_change=point_data.points_change, message=point_data.message)
-    db.add(new_point)
-    user.total_points += point_data.points_change
-    db.commit()
-    return {"message": "Points added successfully", "total_points": user.total_points}
-
-# Remove pontos do utilizador
-@app.post("/points/remove/")
-def remove_points(point_data: PointCreate, db: Session = Depends(get_db)):
-
-    if point_data.points_change <= 0:
-        raise HTTPException(status_code=400, detail="Pontos a remover têm que ter um valor positivo")
-    
-    user = db.query(User).filter(User.id == point_data.user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    new_point = Point(user_id=point_data.user_id, points_change=-abs(point_data.points_change), message=point_data.message)
-    db.add(new_point)
-    user.total_points = max(0, user.total_points - abs(point_data.points_change))
-    db.commit()
-    return {"message": "Points removed successfully", "total_points": user.total_points}
-
-# Histórico de pontos de um utilizador, onde se sabe quantos pontos recebou ou lhe foram retirados e em que dia.
-@app.get("/points/history/{user_id}")
-def get_user_points_history(user_id: int, db: Session = Depends(get_db)):
-    try:
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        # Obtem o historial de pontos do utilizador, ordenados do mais recente ao menos recente
-        history = db.query(Point).filter(Point.user_id == user_id).order_by(desc(Point.change_date)).all()
-
-        # Formata a changedate numa string usando isoformat
-        history_data = [
-            {"points_change": p.points_change, "change_date": p.change_date.isoformat(), "message": p.message} for p in history
-        ]
-
-        # Retorna a resposta como um dicionário.
-        return {
-            "user_id": user.id,
-            "name": user.name,
-            "email": user.email,
-            "total_points": user.total_points,
-            "history": history_data
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
-    
-# Obter o rank dos utilizadores por pontos, do utilizador com mais a menos pontos
-@app.get("/users/ranking/")
-def get_users_ranking(db: Session = Depends(get_db)):
     # Executa a query de forma sincrona, de forma assincrona dá erro devido a algum factor do sqlalchemy: TypeError: object ChunkedIteratorResult can't be used in 'await' expression
     result = db.execute(
         select(
             User.id,
             User.name,
-            User.total_points
+            User.total_points,
+            User.email
         )
         .join(Point, User.id == Point.user_id, isouter=True) 
         .group_by(User.id, User.name)  
@@ -159,8 +109,117 @@ def get_users_ranking(db: Session = Depends(get_db)):
 
     # Formata a resposta do Ranking
     ranking = [
-        {"rank": i + 1, "user_id": user[0], "name": user[1], "total_points": user[2]}
+        {"rank": i + 1, "user_id": user[0], "name": user[1], "Email": user[3], "total_points": user[2]}
         for i, user in enumerate(users)
     ]
 
     return {"ranking": ranking}
+
+# Adiciona pontos ao utilizador
+@app.post("/v1/users/{user_id}/points/")
+def add_points(user_id: int, points: int, message: str, db: Session = Depends(get_db)):
+    if points <= 0:
+        raise HTTPException(status_code=400, detail="Pontos a atribuir têm que ter um valor positivo")
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado!")
+    
+    new_point = Point(user_id=user_id, points_change=points, message=message)
+    db.add(new_point)
+    user.total_points += points
+    db.commit()
+    
+    return {"message": "Pontos atribuidos com sucesso!", "total_points": user.total_points}
+
+
+# Remove pontos do utilizador
+@app.delete("/v1/users/{user_id}/points/")
+def remove_points(user_id: int, points: int, message: str, db: Session = Depends(get_db)):
+    if points <= 0:
+        raise HTTPException(status_code=400, detail="Pontos a remover têm que ter um valor positivo")
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado!")
+    
+    new_point = Point(user_id=user_id, points_change=-abs(points), message=message)
+    db.add(new_point)
+    user.total_points = max(0, user.total_points - abs(points))
+    db.commit()
+    
+    return {"message": "Pontos removidos com sucesso!", "total_points": user.total_points}
+
+# Histórico de pontos de um utilizador, onde se sabe quantos pontos recebou ou lhe foram retirados e em que dia.
+@app.get("/v1/points/history/{user_id}")
+def get_user_points_history(
+    user_id: int,
+    db: Session = Depends(get_db),
+    skip: int = Query(0, ge=0),  # Quantos valores queremos passar a frente, ou seja se o skip for 10 e tivermos 100 resultados. Aparecem do resultado 10 ao 100 (dá skip ao 1 a 10)
+    limit: int = Query(10, ge=1, le=100)  # Quantidade de resultados por página
+):
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Utilizador não encontrado!")
+
+        # Obter todos os resultados antes da paginação
+        total_results = db.query(Point).filter(Point.user_id == user_id).count()
+
+        # Fetch paginated history
+        history = (
+            db.query(Point)
+            .filter(Point.user_id == user_id)
+            .order_by(desc(Point.change_date))
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+        history_data = [
+            {"points_change": p.points_change, "change_date": p.change_date.isoformat(), "message": p.message} 
+            for p in history
+        ]
+
+        return {
+            "user_id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "total_points": user.total_points,
+            "total_results": total_results,
+            "history": history_data,
+            "pagination": {
+                "skip": skip,
+                "limit": limit,
+                "remaining": max(0, total_results - (skip + limit))
+            }
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+    
+@app.post("/v1/generate-api-key")
+def generate_api_key(user_id: int, db: Session = Depends(get_db)):
+    # Gera uma nova chave de API para um utilizador, substituindo a anterior.
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
+
+    new_api_key = secrets.token_hex(32)  # Gera uma chave segura
+    user.api_key = new_api_key  # Substitui a chave antiga
+    db.commit()
+    db.refresh(user)
+
+    return {"api_key": new_api_key}
+
+@app.get("/v1/validate-api-key")
+async def validate_api_key(api_key: str, db: Session = Depends(get_db)):
+    
+    # Verifica se a chave de API é válida e retorna o ID do utilizador correspondente.
+    
+    user = db.query(User).filter(User.api_key == api_key).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="API key inválida.")
+
+    return {"valid": True, "user_id": user.id}
