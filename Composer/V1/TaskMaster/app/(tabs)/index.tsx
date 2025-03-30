@@ -6,13 +6,31 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 
+const BACKEND_URL = 'http://192.168.0.11:8000';
+
+
 export default function HomeScreen() {
   const router = useRouter(); // Get the navigation router
   const [expoToken, setExpoToken] = useState('');
   const [status, setStatus] = useState('A iniciar...');
+  const [apiKey, setApiKey] = useState('');
+  const [pressCount, setPressCount] = useState(0); //só para testar -> o teste seria carregar 5 vezes num botão e ver se recebe notificação após isso
+
+
 
   useEffect(() => {
-    setup();
+    console.log("--------------------------------------ATUALIZOU----------------------------------------------------------")
+    async function inicializar() {
+      await setup();
+      await gerarApiKey();
+  
+      if (expoToken && apiKey) {
+        //await enviarNotificacao(apiKey, expoToken, 'Olá!', 'Esta é uma notificação de teste'); // SÓ PARA TESTAR
+      }
+    }
+  
+    inicializar();
+
 
     // 🔔 Listener para notificação recebida com a app aberta
     const subscription = Notifications.addNotificationReceivedListener(notification => {
@@ -29,83 +47,119 @@ export default function HomeScreen() {
 
   // Function to handle the API request using fetch
   const handleApiRequest = async () => {
+
+  };
+
+  async function enviarNotificacao(apiKey: string, token: string, titulo: string, mensagem: string) {
     try {
-      const response = await fetch('http://192.168.1.190:8000/generate_api_key', {
-        method: 'POST', // HTTP method
+      const response = await fetch(`${BACKEND_URL}/send_notification?api_key=${apiKey}`, {
+        method: 'POST',
         headers: {
-          'Content-Type': 'application/json', // Indicate that we're sending JSON
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          user_token: token,
+          title: titulo,
+          message: mensagem,
+        }),
       });
-
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-
-      const data = await response.json(); // Parse the JSON response
-      console.log('Generated API Key:', data.api_key);
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error('Error generating API key:', error.message);
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        console.log('✅ Notificação enviada com sucesso:', data.message);
       } else {
-        console.error('An unknown error occurred:', error);
+        console.error('❌ Erro ao enviar notificação:', data.detail);
+      }
+    } catch (err) {
+      console.error('❌ Erro inesperado ao enviar notificação:', err);
+    }
+  }
+
+  //----------------------SÓ-PARA-TESTE------------------
+  const handleSecretButtonPress = () => {
+    const newCount = pressCount + 1;
+    setPressCount(newCount);
+  
+    if (newCount === 5) {
+      // Envia notificação após 5 cliques
+      if (apiKey && expoToken) {
+        enviarNotificacao(apiKey, expoToken, 'Surpresa!', 'Carregaste 5 vezes!');
+        setPressCount(0); // Reinicia o contador
+      } else {
+        Alert.alert('Erro', 'API Key ou Token ainda não disponível');
       }
     }
   };
+  
 
-  async function setup() {
+  //-------------------AUXILIARES--NOTIFICAÇÕES---------------------------------------------------
+  async function setup(): Promise<string> {
     try {
       if (!Device.isDevice) {
         Alert.alert('Erro', 'Notificações só funcionam em dispositivos reais');
         setStatus('Dispositivo não suportado');
-        return;
+        return '';
       }
-
-      // 👉 Pedir permissões
+  
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
-
+  
       if (existingStatus !== 'granted') {
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
       }
-
+  
       if (finalStatus !== 'granted') {
         Alert.alert('Permissão recusada');
         setStatus('Permissão recusada');
-        return;
+        return '';
       }
-
-      // 👉 Obter token Expo
+  
       const tokenData = await Notifications.getExpoPushTokenAsync({
         projectId: Constants.expoConfig?.extra?.eas?.projectId,
       });
-
+  
       const token = tokenData?.data || '';
       if (token) {
         setExpoToken(token);
         setStatus('Token obtido com sucesso!');
         console.log('Expo Token:', token);
+        return token;
       } else {
         setStatus('Falha ao obter token');
+        return '';
       }
-
-      // 🔧 Configurar canal Android
-      if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('default', {
-          name: 'default',
-          importance: Notifications.AndroidImportance.MAX,
-          vibrationPattern: [0, 250, 250, 250],
-          lightColor: '#FF231F7C',
-        });
-      }
+  
     } catch (err) {
       console.error('Erro ao configurar notificações:', err);
       setStatus('Erro inesperado');
+      return '';
     }
   }
+  
 
+  async function gerarApiKey(): Promise<string> {
+    try {
+      const response = await fetch(`${BACKEND_URL}/generate_api_key`, {
+        method: 'POST',
+      });
   
+      if (!response.ok) {
+        throw new Error('Erro ao gerar API Key');
+      }
   
+      const data = await response.json();
+      setApiKey(data.api_key);
+      console.log('API Key gerada:', data.api_key);
+      return data.api_key;
+    } catch (err) {
+      console.error('Erro ao obter API Key:', err);
+      return '';
+    }
+  }
+  
+  //--------------------------------------------------------------------------------------------------------
 
   return (
     <ParallaxScrollView
@@ -133,6 +187,14 @@ export default function HomeScreen() {
             <Text style={styles.code}>
               {expoToken || 'A obter token...'}
             </Text>
+            <Text style={styles.label}>API Key:</Text>
+            <Text style={styles.code}>
+              {apiKey || 'A obter api key...'}
+            </Text>
+            <TouchableOpacity style={styles.button} onPress={handleSecretButtonPress}>
+              <Image source={require('@/assets/images/icon.png')} style={styles.buttonImage} />
+              <Text style={styles.buttonText}>Segredo ({pressCount}/5)</Text>
+            </TouchableOpacity>
         </View>
       </View>
     </ParallaxScrollView>
