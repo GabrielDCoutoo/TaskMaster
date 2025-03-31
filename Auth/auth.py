@@ -23,8 +23,8 @@ app.secret_key = os.urandom(24)
 
 # OAuth Configuration (WSO2)
 app.config['OAUTH_CREDENTIALS'] = {
-    'client_id': 'agh44RajMJcYvCIq3lSMrutfPJ0a',
-    'client_secret': 'tMd7PPpzIR2JaY4u_dWEhr9kW9Ya',
+    'client_id': 'u8vpP8lcTQLURxk8itbLvY4pySoa',
+    'client_secret': 'REeS1LgzdyZfPmaIXloiNor3cMwa',
     'authorize_url': 'https://wso2-gw.ua.pt/authorize', 
     'token_url': 'https://wso2-gw.ua.pt/token',
     'userinfo_endpoint': 'https://wso2-gw.ua.pt/userinfo'
@@ -51,11 +51,17 @@ def get_db():
 
 @app.route('/')
 def home():
-    """ Handles the OAuth callback manually since WSO2 redirects only to http://localhost:5000 """
     code = request.args.get('code')
+    state = request.args.get('state')
+    session_state = request.args.get('session_state')
+
     if code:
+        print("🔑 CÓDIGO DE AUTORIZAÇÃO RECEBIDO DO WSO2:")
+        print(f"👉 code = {code}")
+        print(f"🔐 state = {state}")
+        print(f"🧾 session_state = {session_state}")
         return handle_oauth_callback(code)
-    
+
     if 'user' in session:
         return jsonify(session['user'])
 
@@ -63,18 +69,24 @@ def home():
 
 
 def handle_oauth_callback(code):
-    """ Manually handles OAuth response when WSO2 redirects to http://localhost:5000 """
     client_id = app.config['OAUTH_CREDENTIALS']['client_id']
     client_secret = app.config['OAUTH_CREDENTIALS']['client_secret']
     token_url = app.config['OAUTH_CREDENTIALS']['token_url']
     
+    # Gerar o header Basic Auth corretamente
+    auth_header = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+
     data = {
         'grant_type': 'authorization_code',
         'code': code,
         'redirect_uri': "http://localhost:5000",  # Must match allowed redirect URIs
     }
-    
-    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+
+    headers = {
+        'Authorization': 'Basic dTh2cFA4bGNUUUxVUnhrOGl0Ykx2WTRweVNvYTpSRWVTMUxnemR5WmZQbWFJWGxvaU5vcjNjTXdh',
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
+
     response = requests.post(token_url, data=data, headers=headers)
 
     if response.status_code != 200:
@@ -90,9 +102,17 @@ def handle_oauth_callback(code):
     user = db.query(User).filter_by(email=user_info.get("email")).first()
 
     if not user:
-        user = User(name=user_info.get("name"), email=user_info.get("email"), total_points=0)
+        nome_utilizador = user_info.get("name") or user_info.get("given_name") or "Sem Nome"
+        print("📝 Nome recebido:", nome_utilizador)
+
+        user = User(
+            name=nome_utilizador,
+            email=user_info.get("email"),
+            total_points=0
+        )
         db.add(user)
         db.commit()
+
 
     session['user'] = user_info
     db.close()
@@ -102,9 +122,8 @@ def handle_oauth_callback(code):
 
 @app.route('/login')
 def login():
-    redirect_uri = "http://localhost:5000"  # This must match an allowed URI in WSO2
+    redirect_uri = "http://localhost:5000"  # Must match allowed URI in WSO2
     return ua_oauth.authorize_redirect(redirect_uri)
-
 
 @app.route('/callback')
 def callback():
@@ -118,47 +137,7 @@ def callback():
     print(f"✅ Authorization code received: {code}")
     print(f"✅ State: {state}")
 
-    redirect_uri = "http://localhost:5000"  # Must match WSO2 allowed redirect URIs
-    token_url = app.config['OAUTH_CREDENTIALS']['token_url']
-
-    data = {
-        'grant_type': 'authorization_code',
-        'code': code,
-        'redirect_uri': redirect_uri,
-        'client_id': app.config['OAUTH_CREDENTIALS']['client_id'],
-        'client_secret': app.config['OAUTH_CREDENTIALS']['client_secret'],
-    }
-
-    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-
-    print("🔄 Sending token request to WSO2...")
-    response = requests.post(token_url, data=data, headers=headers)
-
-    print(f"🔄 Token response status code: {response.status_code}")
-    print(f"🔄 Token response body: {response.text}")
-
-    if response.status_code != 200:
-        print("❌ ERROR: Failed to obtain access token")
-        return jsonify({'error': 'Failed to obtain access token'}), 400
-
-    token_data = response.json()
-    access_token = token_data.get('access_token')
-
-    if not access_token:
-        print("❌ ERROR: No access token received")
-        return jsonify({'error': 'No access token received'}), 400
-
-    print(f"✅ Access token received: {access_token}")
-
-    # Fetch user info
-    headers = {'Authorization': f'Bearer {access_token}'}
-    user_info = requests.get(app.config['OAUTH_CREDENTIALS']['userinfo_endpoint'], headers=headers).json()
-
-    print(f"✅ User Info: {user_info}")
-
-    session['user'] = user_info
-
-    return jsonify({'message': 'Login successful!', 'access_token': access_token})
+    return handle_oauth_callback(code)
 
 @app.route('/protected', methods=['GET'])
 def protected():
@@ -179,5 +158,4 @@ def logout():
     return redirect(url_for('home'))
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0",port="5000", debug=True)
-
+    app.run(host="0.0.0.0", port=5000, debug=True)
