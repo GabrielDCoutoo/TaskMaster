@@ -15,7 +15,7 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: Colors[colorScheme ?? 'dark'].tint,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
@@ -24,18 +24,40 @@ export default function TabLayout() {
             // Use a transparent background on iOS to show the blur effect
             position: 'absolute',
           },
-          default: {},
+          default: {
+            borderRadius:10
+          },
         }),
       }}>
       
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: 'index',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
-      
+      <Tabs.Screen
+        name="quests"
+        options={{
+          title: 'quests',
+          tabBarIcon: ({ color }) => <Icon size={28} name="assignment" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="ranking"
+        options={{
+          title: 'ranking',
+          tabBarIcon: ({ color }) => <Icon size={28} name="leaderboard" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="rewards"
+        options={{
+          title: 'rewards',
+          tabBarIcon: ({ color }) => <Icon size={28} name="emoji-events" color={color} />,
+        }}
+      />
       <Tabs.Screen
         name="profile"
         options={{
@@ -43,14 +65,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <Icon size={28} name="person" color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          tabBarIcon: ({ color }) => <Icon size={28} name="settings" color={color} />,
-        }}
-      />
-      
     </Tabs>
   );
 }

@@ -1,22 +1,175 @@
-import { Image, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
+import { Image, StyleSheet, TouchableOpacity, View, Text, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router'; // Import useRouter
 import ParallaxScrollView from '@/components/ParallaxScrollView';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+import * as Device from 'expo-device';
+
+const BACKEND_URL = 'http://192.168.0.11:8000';
+
 
 export default function HomeScreen() {
   const router = useRouter(); // Get the navigation router
+  const [expoToken, setExpoToken] = useState('');
+  const [status, setStatus] = useState('A iniciar...');
+  const [apiKey, setApiKey] = useState('');
+  const [pressCount, setPressCount] = useState(0); //só para testar -> o teste seria carregar 5 vezes num botão e ver se recebe notificação após isso
+
+
+
+  useEffect(() => {
+    console.log("--------------------------------------ATUALIZOU----------------------------------------------------------")
+    async function inicializar() {
+      await setup();
+      await gerarApiKey();
+  
+      if (expoToken && apiKey) {
+        //await enviarNotificacao(apiKey, expoToken, 'Olá!', 'Esta é uma notificação de teste'); // SÓ PARA TESTAR
+      }
+    }
+  
+    inicializar();
+
+
+    // 🔔 Listener para notificação recebida com a app aberta
+    const subscription = Notifications.addNotificationReceivedListener(notification => {
+      Alert.alert(
+        '📬 Notificação Recebida',
+        `Título: ${notification.request.content.title}\nMensagem: ${notification.request.content.body}`
+      );
+    });
+
+    return () => {
+      subscription.remove(); // Limpa o listener ao sair
+    };
+  }, []);
+
+  // Function to handle the API request using fetch
+  const handleApiRequest = async () => {
+
+  };
+
+  async function enviarNotificacao(apiKey: string, token: string, titulo: string, mensagem: string) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/send_notification?api_key=${apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_token: token,
+          title: titulo,
+          message: mensagem,
+        }),
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        console.log('✅ Notificação enviada com sucesso:', data.message);
+      } else {
+        console.error('❌ Erro ao enviar notificação:', data.detail);
+      }
+    } catch (err) {
+      console.error('❌ Erro inesperado ao enviar notificação:', err);
+    }
+  }
+
+  //----------------------SÓ-PARA-TESTE------------------
+  const handleSecretButtonPress = () => {
+    const newCount = pressCount + 1;
+    setPressCount(newCount);
+  
+    if (newCount === 5) {
+      // Envia notificação após 5 cliques
+      if (apiKey && expoToken) {
+        enviarNotificacao(apiKey, expoToken, 'Surpresa!', 'Carregaste 5 vezes!');
+        setPressCount(0); // Reinicia o contador
+      } else {
+        Alert.alert('Erro', 'API Key ou Token ainda não disponível');
+      }
+    }
+  };
+  
+
+  //-------------------AUXILIARES--NOTIFICAÇÕES---------------------------------------------------
+  async function setup(): Promise<string> {
+    try {
+      if (!Device.isDevice) {
+        Alert.alert('Erro', 'Notificações só funcionam em dispositivos reais');
+        setStatus('Dispositivo não suportado');
+        return '';
+      }
+  
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+  
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+  
+      if (finalStatus !== 'granted') {
+        Alert.alert('Permissão recusada');
+        setStatus('Permissão recusada');
+        return '';
+      }
+  
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+      });
+  
+      const token = tokenData?.data || '';
+      if (token) {
+        setExpoToken(token);
+        setStatus('Token obtido com sucesso!');
+        console.log('Expo Token:', token);
+        return token;
+      } else {
+        setStatus('Falha ao obter token');
+        return '';
+      }
+  
+    } catch (err) {
+      console.error('Erro ao configurar notificações:', err);
+      setStatus('Erro inesperado');
+      return '';
+    }
+  }
+  
+
+  async function gerarApiKey(): Promise<string> {
+    try {
+      const response = await fetch(`${BACKEND_URL}/generate_api_key`, {
+        method: 'POST',
+      });
+  
+      if (!response.ok) {
+        throw new Error('Erro ao gerar API Key');
+      }
+  
+      const data = await response.json();
+      setApiKey(data.api_key);
+      console.log('API Key gerada:', data.api_key);
+      return data.api_key;
+    } catch (err) {
+      console.error('Erro ao obter API Key:', err);
+      return '';
+    }
+  }
+  
+  //--------------------------------------------------------------------------------------------------------
 
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: 'transparent', dark: 'transparent' }}
-      headerImage={
-        <Image source={require('@/assets/images/header.png')} style={styles.reactLogo} />
-      }>
+      headerImage={<Image source={require('@/assets/images/header.png')} style={styles.reactLogo} />}>
       <View style={styles.container}>
         <View style={styles.buttonGrid}>
-          <TouchableOpacity style={styles.button} onPress={() => console.log('Completed Tasks Pressed')}>
+          <TouchableOpacity style={styles.button} onPress={handleApiRequest}>
             <Image source={require('@/assets/images/completed_tasks.png')} style={styles.buttonImage} />
-            <Text style={styles.buttonText}>Completed Tasks</Text>
+            <Text style={styles.buttonText}>API Request</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.button} onPress={() => router.push('/screens/selectTasksScreen')}>
             <Image source={require('@/assets/images/list_of_tasks.png')} style={styles.buttonImage} />
@@ -26,13 +179,26 @@ export default function HomeScreen() {
             <Image source={require('@/assets/images/select_tasks.png')} style={styles.buttonImage} />
             <Text style={styles.buttonText}>Select Tasks</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={() => router.push('/screens/githubScreen')}> 
+          <TouchableOpacity style={styles.button} onPress={() => router.push('/screens/githubScreen')}>
             <Image source={require('@/assets/images/github.png')} style={styles.buttonImage} />
             <Text style={styles.buttonText}>GitHub</Text>
           </TouchableOpacity>
+          <Text style={styles.label}>Token do Dispositivo:</Text>
+            <Text style={styles.code}>
+              {expoToken || 'A obter token...'}
+            </Text>
+            <Text style={styles.label}>API Key:</Text>
+            <Text style={styles.code}>
+              {apiKey || 'A obter api key...'}
+            </Text>
+            <TouchableOpacity style={styles.button} onPress={handleSecretButtonPress}>
+              <Image source={require('@/assets/images/icon.png')} style={styles.buttonImage} />
+              <Text style={styles.buttonText}>Segredo ({pressCount}/5)</Text>
+            </TouchableOpacity>
         </View>
       </View>
     </ParallaxScrollView>
+    
   );
 }
 
@@ -41,7 +207,7 @@ const styles = StyleSheet.create({
     height: 150,
     width: 420,
     bottom: 70,
-    top:50,
+    top: 50,
     left: 0,
     position: 'absolute',
     backgroundColor: '#121212',
@@ -51,11 +217,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  label: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 16,
+  },
   buttonGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     width: '90%',
+  },
+  code: {
+    fontSize: 14,
+    color: '#333',
+    backgroundColor: '#eaeaea',
+    padding: 8,
+    borderRadius: 5,
+    marginTop: 4,
   },
   button: {
     backgroundColor: '#03A9F4',
@@ -82,3 +261,5 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
 });
+
+
