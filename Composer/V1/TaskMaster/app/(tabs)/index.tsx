@@ -6,7 +6,7 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 
-const BACKEND_URL = 'http://192.168.42.17:8000';
+const BACKEND_URL = 'http://192.168.1.6:8000';
 
 
 export default function HomeScreen() {
