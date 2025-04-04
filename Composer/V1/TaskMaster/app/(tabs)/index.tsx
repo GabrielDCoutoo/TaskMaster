@@ -6,7 +6,7 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 
-const BACKEND_URL = 'http://192.168.0.11:8000';
+const BACKEND_URL = 'http://192.168.42.17:8000';
 
 
 export default function HomeScreen() {
@@ -22,6 +22,7 @@ export default function HomeScreen() {
     console.log("--------------------------------------ATUALIZOU----------------------------------------------------------")
     async function inicializar() {
       await setup();
+      //gerarApiKey se não existir
       await gerarApiKey();
   
       if (expoToken && apiKey) {
@@ -139,6 +140,7 @@ export default function HomeScreen() {
   }
   
 
+  //Nesta função devemos guardar as keys para não serem sempre geradas novas
   async function gerarApiKey(): Promise<string> {
     try {
       const response = await fetch(`${BACKEND_URL}/generate_api_key`, {
