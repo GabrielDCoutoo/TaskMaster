@@ -5,8 +5,12 @@ import React, { useEffect, useState } from 'react';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
+import * as SecureStore from 'expo-secure-store';
 
-const BACKEND_URL = 'http://10.236.227.2:8002';
+//  Ter atenção:
+//  - Backend_URL
+//  - ID do projeto -> app.json/expo-> extra->eas->projectID
+const BACKEND_URL = 'http://192.168.0.15:8000';
 
 
 export default function HomeScreen() {
@@ -85,7 +89,7 @@ export default function HomeScreen() {
     if (newCount === 5) {
       // Envia notificação após 5 cliques
       if (apiKey && expoToken) {
-        enviarNotificacao(apiKey, expoToken, 'Surpresa!', 'Carregaste 5 vezes!');
+        enviarNotificacao(apiKey, expoToken, 'Notificação', 'Carregaste 5 vezes!');
         setPressCount(0); // Reinicia o contador
       } else {
         Alert.alert('Erro', 'API Key ou Token ainda não disponível');
@@ -143,23 +147,34 @@ export default function HomeScreen() {
   //Nesta função devemos guardar as keys para não serem sempre geradas novas
   async function gerarApiKey(): Promise<string> {
     try {
+      // Verifica se já existe uma key guardada
+      const storedKey = await SecureStore.getItemAsync('api_key');
+      if (storedKey) {
+        console.log('API Key armazenada:', storedKey);
+        setApiKey(storedKey);
+        return storedKey;
+      }
+  
+      // Se não existir, gera uma nova
       const response = await fetch(`${BACKEND_URL}/generate_api_key`, {
         method: 'POST',
       });
   
       if (!response.ok) {
-        throw new Error('Erro ao gerar API Key');
+        throw new Error('Erro ao gerar nova API Key');
       }
   
       const data = await response.json();
+      await SecureStore.setItemAsync('api_key', data.api_key); // Guarda a nova key
       setApiKey(data.api_key);
-      console.log('API Key gerada:', data.api_key);
+      console.log('🔐 Nova API Key gerada e guardada:', data.api_key);
       return data.api_key;
     } catch (err) {
-      console.error('Erro ao obter API Key:', err);
+      console.error('❌ Erro ao obter API Key:', err);
       return '';
     }
   }
+  
   
   //--------------------------------------------------------------------------------------------------------
 
