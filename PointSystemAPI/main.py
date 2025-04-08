@@ -1,13 +1,14 @@
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, File, UploadFile
+from fastapi.responses import RedirectResponse, JSONResponse
+import uuid
 from sqlalchemy import exc, desc, func
 from sqlalchemy.future import select
 from sqlalchemy.orm import Session
 from database import engine, SessionLocal
 from pydantic import BaseModel, EmailStr
-from typing import List
+from typing import List, Optional
 import models
-from models import User, Point
-from fastapi.responses import RedirectResponse
+from models import User, Point, Badge
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 import secrets
 
@@ -34,6 +35,22 @@ class PointCreate(BaseModel):
 class PointHistoryResponse(BaseModel):
     points_change: int
     change_date: str
+
+class BadgeCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    threshold: int
+    image_filename: str
+
+class BadgeOut(BaseModel):
+    id: int
+    name: str
+    description: Optional[str]
+    threshold: int
+    image_filename: str
+
+    class Config:
+        orm_mode = True
 
 class UserPointsResponse(BaseModel):
     user_id: int
@@ -90,30 +107,41 @@ def remove_user(user_id: int, db: Session = Depends(get_db)):
 # Retorna todos os utilizadores presentes na base de dados em formato de rank, atualizado após recomendação do professor de não usar um get á parte para o ranking e juntar tudo no get_users
 @app.get("/v1/users/")
 def get_users(db: Session = Depends(get_db)):
-    # Executa a query de forma sincrona, de forma assincrona dá erro devido a algum factor do sqlalchemy: TypeError: object ChunkedIteratorResult can't be used in 'await' expression
     result = db.execute(
         select(
             User.id,
             User.name,
             User.total_points,
-            User.email
+            User.email,
+            Badge.name.label("badge_name")
         )
-        .join(Point, User.id == Point.user_id, isouter=True) 
-        .group_by(User.id, User.name)  
-        .order_by(desc("total_points"))
+        .join(Point, User.id == Point.user_id, isouter=True)
+        .join(Badge, User.current_badge_id == Badge.id, isouter=True)
+        .group_by(User.id, User.name, User.total_points, User.email, Badge.name)
+        .order_by(desc(User.total_points))
     )
+
     users = result.fetchall()
 
     if not users:
         return {"ranking": []}
 
-    # Formata a resposta do Ranking
     ranking = [
-        {"rank": i + 1, "user_id": user[0], "name": user[1], "Email": user[3], "total_points": user[2]}
+        {
+            "rank": i + 1,
+            "user_id": user[0],
+            "name": user[1],
+            "email": user[3],
+            "total_points": user[2],
+            "badge": user[4] if user[4] else None
+        }
         for i, user in enumerate(users)
     ]
 
     return {"ranking": ranking}
+
+
+
 
 # Adiciona pontos ao utilizador
 @app.post("/v1/users/{user_id}/points/")
@@ -223,3 +251,69 @@ async def validate_api_key(api_key: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="API key inválida.")
 
     return {"valid": True, "user_id": user.id}
+
+
+@app.post("/v1/create-badge")
+async def create_badge(
+    name: str,
+    threshold: int,
+    image_filename: str,
+    description: str = "",
+    db: Session = Depends(get_db)
+):
+    existing = db.query(Badge).filter(Badge.name == name).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Badge com este nome já existe.")
+
+    badge = Badge(
+        name=name,
+        description=description,
+        threshold=threshold,
+        image_filename=image_filename,
+    )
+    db.add(badge)
+    db.commit()
+    db.refresh(badge)
+
+    return {
+        "message": "Badge criado com sucesso!",
+        "badge_id": badge.id
+    }
+
+@app.post("/v1/assign-badges")
+async def assign_badges(db: Session = Depends(get_db)):
+    # Fetch all badges ordered from highest to lowest threshold
+    badges = db.query(Badge).order_by(Badge.threshold.desc()).all()
+    if not badges:
+        raise HTTPException(status_code=404, detail="Nenhum badge encontrado.")
+
+    users = db.query(User).all()
+    if not users:
+        raise HTTPException(status_code=404, detail="Nenhum utilizador encontrado.")
+
+    updated_users = []
+
+    for user in users:
+        assigned = False
+        for badge in badges:
+            if user.total_points >= badge.threshold:
+                if user.current_badge_id != badge.id:
+                    user.current_badge_id = badge.id
+                    updated_users.append({
+                        "user_id": user.id,
+                        "name": user.name,
+                        "new_badge": badge.name
+                    })
+                assigned = True
+                break  # Badge encontrado, parar de procurar
+        if not assigned and user.current_badge_id is not None:
+            # Se o utilizador não tem pontos para nenhum badge, remove
+            user.current_badge_id = None
+
+    db.commit()
+
+    return {
+        "message": "Badges atribuídos com base nos pontos.",
+        "updated": updated_users
+    }
+

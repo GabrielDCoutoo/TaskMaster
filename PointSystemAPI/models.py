@@ -11,9 +11,12 @@ class User(Base):
     email = Column(String, unique=True, nullable=False)
     total_points = Column(Integer, default=0, nullable=False)
     api_key = Column(String, unique=True, nullable=True)
+    current_badge_id = Column(Integer, ForeignKey("badges.id"), nullable=True)
+
 
     # Relação que relaciona com o historial de pontos
     points_history = relationship("Point", back_populates="user", cascade="all, delete-orphan")
+    current_badge = relationship("Badge", lazy="joined")
 
 class Point(Base):
     __tablename__ = 'points'
@@ -26,4 +29,14 @@ class Point(Base):
 
     # Relação que relaciona com o utilizador
     user = relationship("User", back_populates="points_history")
+
+class Badge(Base):
+    __tablename__ = 'badges'
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False)
+    description = Column(String, nullable=True)
+    image_filename = Column(String, nullable=False)
+    threshold = Column(Integer, nullable=True)  # Número de pontos necessários para ganhar um badge
+
 
