@@ -8,89 +8,19 @@ interface UserRank {
   name: string;
   total_points: number;
 }
+const BASE_URL = 'http://10.236.227.2:8000';
 
 export default function RankingScreen() {
   const [ranking, setRanking] = useState<UserRank[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [apiKey, setApiKey] = useState<string | null>(null);
-
-  useEffect(() => {
-    const generateApiKey = async () => {
-      try {
-        const response = await fetch('http://192.168.56.1:8000/v1/generate-api-key?user_id=7', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-
-        const data = await response.json();
-        console.log('Generated API Key:', data.api_key);
-        validateAPIKey(data.api_key);
-      } catch (error) {
-        if (error instanceof Error) {
-          console.error('Error generating API key:', error.message);
-        } else {
-          console.error('An unknown error occurred:', error);
-        }
-      }
-    };
-
-    const validateAPIKey = async (apiKey: string) => {
-      try {
-        const url = `http://192.168.56.1:8000/v1/validate-api-key?api_key=${apiKey}`;
-
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        console.log('Response status:', response.status);
-
-        if (!response.ok) {
-          console.log('API Key to be validated:', apiKey);
-          throw new Error('Invalid API key');
-        }
-
-        const data = await response.json();
-        console.log('Response data:', data);
-
-        if (data.valid) {
-          console.log('API Key is valid');
-          setApiKey(apiKey); // Set the valid API key
-        } else {
-          console.error('API key is invalid');
-        }
-      } catch (error) {
-        if (error instanceof Error) {
-          console.error('Error validating API key:', error.message);
-        } else {
-          console.error('An unknown error occurred:', error);
-        }
-      }
-    };
-
-    // Call generate API key once on mount
-    generateApiKey();
-
-  }, []); // Empty dependency array ensures this effect runs only once on mount
 
   useEffect(() => {
     const fetchRanking = async () => {
-      if (!apiKey) return;
-
       try {
-        const response = await fetch('http://192.168.56.1:8000/v1/users/', {
+        const response = await fetch(`${BASE_URL}/v1/users/`, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
           },
         });
@@ -110,20 +40,14 @@ export default function RankingScreen() {
       }
     };
 
-    // Fetch ranking after API key is validated
-    if (apiKey) {
-      fetchRanking();
-    }
+    fetchRanking();
 
     const intervalId = setInterval(() => {
-      if (apiKey) {
-        fetchRanking();
-      }
-    }, 30000); // Fetch ranking every 30 seconds after API key is available
+      fetchRanking();
+    }, 30000); // Refresh every 30 seconds
 
-    // Clean up the interval on component unmount
     return () => clearInterval(intervalId);
-  }, [apiKey]); // Only re-run if API key is available
+  }, []);
 
   if (loading) {
     return <ActivityIndicator size="large" color="#4CAF50" style={styles.loader} />;
@@ -140,28 +64,19 @@ export default function RankingScreen() {
         <Text style={styles.header}>Ranking</Text>
         <View style={styles.top3Container}>
           <View style={[styles.topUser, styles.thirdPlace]}>
-            <Image
-              source={require('../../assets/images/avatar.jpg')}
-              style={styles.profileCircle}
-            />
+            <Image source={require('../../assets/images/avatar.jpg')} style={styles.profileCircle} />
             <Text style={styles.userName}>{ranking[2]?.name}</Text>
             <Text style={styles.userPoints}>{ranking[2]?.total_points} XP</Text>
             <View style={styles.rankBadge}><Text style={styles.rankBadgeText}>3</Text></View>
           </View>
           <View style={[styles.topUser, styles.firstPlace]}>
-            <Image
-              source={require('../../assets/images/avatar.jpg')}
-              style={styles.profileCircle}
-            />
+            <Image source={require('../../assets/images/avatar.jpg')} style={styles.profileCircle} />
             <Text style={styles.userName}>{ranking[0]?.name}</Text>
             <Text style={styles.userPoints}>{ranking[0]?.total_points} XP</Text>
             <View style={styles.rankBadge}><Text style={styles.rankBadgeText}>1</Text></View>
           </View>
           <View style={[styles.topUser, styles.secondPlace]}>
-            <Image
-              source={require('../../assets/images/avatar.jpg')}
-              style={styles.profileCircle}
-            />
+            <Image source={require('../../assets/images/avatar.jpg')} style={styles.profileCircle} />
             <Text style={styles.userName}>{ranking[1]?.name}</Text>
             <Text style={styles.userPoints}>{ranking[1]?.total_points} XP</Text>
             <View style={styles.rankBadge}><Text style={styles.rankBadgeText}>2</Text></View>

@@ -18,6 +18,7 @@ interface GitHubUser {
   email?: string;
 }
 
+const BASE_URL = 'http://10.236.227.2:8000';
 
 const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
   const [userInfo, setUserInfo] = useState<GitHubUser | null>(null);
@@ -74,7 +75,7 @@ async function fetchGitHubUser(token: string) {
     console.log("GitHub user data:", data);
 
     // First, get all users
-    const usersResponse = await fetch('http://192.168.56.1:8000/v1/users/', { method: 'GET' });
+    const usersResponse = await fetch(`${BASE_URL}/v1/users/`, { method: 'GET' });
     const users = await usersResponse.json();
     console.log("users:", JSON.stringify(users, null, 2));
     const userList = users.ranking.map((user: { name: string; Email: string }) => ({
@@ -95,7 +96,7 @@ async function fetchGitHubUser(token: string) {
       console.log("User already exists, skipping creation.");
     } else {
       // Only add user if not found
-      const addUserResponse = await fetch('http://192.168.56.1:8000/v1/users/', {
+      const addUserResponse = await fetch(`${BASE_URL}/v1/users/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: data.name, email: data.email }),
