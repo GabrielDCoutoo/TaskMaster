@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, TIMESTAMP, func
+from sqlalchemy import Column, Integer, String, ForeignKey, TIMESTAMP, func, Text, Boolean
 from sqlalchemy.orm import relationship
 from database import Base
 from datetime import datetime
@@ -17,6 +17,7 @@ class User(Base):
     # Relação que relaciona com o historial de pontos
     points_history = relationship("Point", back_populates="user", cascade="all, delete-orphan")
     current_badge = relationship("Badge", lazy="joined")
+    quests = relationship("Quest", back_populates="user")
 
 class Point(Base):
     __tablename__ = 'points'
@@ -38,5 +39,18 @@ class Badge(Base):
     description = Column(String, nullable=True)
     image_filename = Column(String, nullable=False)
     threshold = Column(Integer, nullable=True)  # Número de pontos necessários para ganhar um badge
+
+class Quest(Base):
+    __tablename__ = "quests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True)
+    description = Column(Text)
+    points = Column(Integer)  # Pontos a serem atribuídos
+    completed = Column(Boolean, default=False)  # Se a quest foi completada
+
+    user_id = Column(Integer, ForeignKey("users.id"))  # Relacionamento com o utilizador
+    user = relationship("User", back_populates="quests")
+
 
 

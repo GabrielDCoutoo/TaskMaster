@@ -8,7 +8,7 @@ from database import engine, SessionLocal
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 import models
-from models import User, Point, Badge
+from models import User, Point, Badge, Quest
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 import secrets
 
@@ -51,6 +51,11 @@ class BadgeOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+class QuestCreate(BaseModel):
+    title: str
+    description: str
+    points: int
 
 class UserPointsResponse(BaseModel):
     user_id: int
@@ -317,3 +322,44 @@ async def assign_badges(db: Session = Depends(get_db)):
         "updated": updated_users
     }
 
+@app.post("/v1/quests/")
+def create_quest(quest: QuestCreate, user_id: int, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado!")
+
+    new_quest = Quest(
+        title=quest.title,
+        description=quest.description,
+        points=quest.points,
+        user_id=user_id
+    )
+
+    db.add(new_quest)
+    db.commit()
+    db.refresh(new_quest)
+
+    return {"message": "Quest criada com sucesso!", "quest_id": new_quest.id}
+
+@app.post("/v1/quests/{quest_id}/complete")
+def complete_quest(quest_id: int, db: Session = Depends(get_db)):
+    quest = db.query(Quest).filter(Quest.id == quest_id).first()
+    if not quest:
+        raise HTTPException(status_code=404, detail="Quest não encontrada!")
+    
+    if quest.completed:
+        raise HTTPException(status_code=400, detail="A quest já foi completada!")
+
+    # Marcar a quest como completada
+    quest.completed = True
+    db.commit()
+
+    # Atribuir os pontos ao utilizador
+    user = db.query(User).filter(User.id == quest.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado!")
+    
+    user.total_points += quest.points
+    db.commit()
+
+    return {"message": f"Quest '{quest.title}' concluída com sucesso! {quest.points} pontos atribuídos."}
