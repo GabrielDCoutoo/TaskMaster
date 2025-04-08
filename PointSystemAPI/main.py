@@ -363,3 +363,23 @@ def complete_quest(quest_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": f"Quest '{quest.title}' concluída com sucesso! {quest.points} pontos atribuídos."}
+
+
+@app.get("/v1/quests/user/{user_id}")
+def get_quests_by_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado!")
+
+    quests = db.query(Quest).filter(Quest.user_id == user_id).all()
+
+    return [
+        {
+            "id": quest.id,
+            "title": quest.title,
+            "description": quest.description,
+            "points": quest.points,
+            "completed": quest.completed,
+        }
+        for quest in quests
+    ]
