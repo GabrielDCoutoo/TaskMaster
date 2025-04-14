@@ -1,12 +1,14 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
+
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 
 
 export default function TabLayout() {
@@ -15,7 +17,7 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'dark'].tint,
+        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
@@ -24,47 +26,44 @@ export default function TabLayout() {
             // Use a transparent background on iOS to show the blur effect
             position: 'absolute',
           },
-          default: {
-            borderRadius:10
-          },
+          default: {},
         }),
       }}>
-      
       <Tabs.Screen
         name="index"
         options={{
-          title: 'index',
+          title: 'Home',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="subjects"
+        name="quests"
         options={{
-          title: 'subjects',
-          tabBarIcon: ({ color }) => <Icon size={28} name="assignment" color={color} />,
+          title: 'Quests',
+          tabBarIcon: ({ color }) => (
+            <FontAwesome5 name="scroll" size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
-        name="ranking"
+        name="student_quests"
         options={{
-          title: 'ranking',
-          tabBarIcon: ({ color }) => <Icon size={28} name="leaderboard" color={color} />,
+          title: 'Student Quests',
+          tabBarIcon: ({ color }) => (
+            <FontAwesome5 name="graduation-cap" size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
-        name="rewards"
+        name="github"
         options={{
-          title: 'rewards',
-          tabBarIcon: ({ color }) => <Icon size={28} name="emoji-events" color={color} />,
+          title: 'GitHub',
+          tabBarIcon: ({ color }) => (
+            <FontAwesome name="github" size={24} color={color} />
+          ),
         }}
       />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <Icon size={28} name="person" color={color} />,
-        }}
-      />
+
     </Tabs>
   );
 }

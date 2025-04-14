@@ -8,7 +8,7 @@ interface UserRank {
   name: string;
   total_points: number;
 }
-const BASE_URL = 'http://10.236.227.2:8000';
+const BASE_URL = 'http://192.168.1.99:8002';
 
 export default function RankingScreen() {
   const [ranking, setRanking] = useState<UserRank[]>([]);

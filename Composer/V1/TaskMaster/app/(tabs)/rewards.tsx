@@ -4,9 +4,8 @@ import { ProgressBar } from 'react-native-paper';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 
-const BACKEND_URL = 'http://10.236.227.2:8002'; // replace with your backend IP
-const api_key = "e93ab6df869a0d1a3c86eeb47e54e52daa7aad097203a340bdf8d0c25fa6fca0"; // replace with your API key
-// deve ser substituido por um fetch GET para o backend e obter a api key
+const BACKEND_URL = 'http://192.168.1.190:8003';
+const api_key = "e93ab6df869a0d1a3c86eeb47e54e52daa7aad097203a340bdf8d0c25fa6fca0";
 
 type Reward = {
   id: string;
@@ -14,21 +13,15 @@ type Reward = {
   progress: number;
   notifications: number;
   description: string;
+  user_id?: number;
+  status: string;
 };
-
-const initialRewards: Reward[] = [
-  { id: '1', title: 'Tipo/UC 1', progress: 1, notifications: 0, description: 'You can now redeem: extra 48h to deliver final project' },
-  { id: '2', title: 'Tipo/UC 2', progress: 0.55, notifications: 1, description: 'This reward is halfway done.' },
-  { id: '3', title: 'Tipo/UC 3', progress: 0.15, notifications: 3, description: 'This reward is just starting.' },
-  { id: '4', title: 'Tipo/UC 4', progress: 1, notifications: 0, description: 'You can now redeem: 10% extra credit on your finals grade' },
-  { id: '5', title: 'Tipo/UC 5', progress: 0.9, notifications: 0, description: 'You are very close!' },
-];
 
 const RewardsScreen = () => {
   const [expandedReward, setExpandedReward] = useState<string | null>(null);
   const [expoToken, setExpoToken] = useState('');
   const [apiKey, setApiKey] = useState('');
-  const [rewards, setRewards] = useState<Reward[]>(initialRewards);
+  const [rewards, setRewards] = useState<Reward[]>([]);
 
   useEffect(() => {
     async function setup() {
@@ -46,11 +39,8 @@ const RewardsScreen = () => {
         setExpoToken(tokenData.data);
       }
 
-      try {
-        setApiKey(api_key);
-      } catch (err) {
-        console.error('Erro ao obter API Key:', err);
-      }
+      setApiKey(api_key);
+      getQuests();
     }
 
     setup();
@@ -103,6 +93,28 @@ const RewardsScreen = () => {
     );
   };
 
+  const getQuests = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/quests/V1/getQuests`);
+      const data = await response.json();
+      console.log('Quests:', data);
+
+      const formatted = data.map((quest: any) => ({
+        id: String(quest.id),
+        title: quest.subject, // ✅ use subject instead of title
+        progress: quest.status === 'completed' ? 1 : 0,
+        notifications: 0,
+        description: quest.description,
+        user_id: quest.user_id,
+        status: quest.status === 'created' ? 'in progress' : quest.status, // Set status to 'in progress' if it's 'created'
+      }));
+
+      setRewards(formatted);
+    } catch (error) {
+      console.error('Error fetching quests:', error);
+    }
+  };
+
   const renderRewardItem = ({ item }: { item: Reward }) => (
     <View style={styles.rewardCard}>
       <TouchableOpacity onPress={() => toggleExpand(item.id)}>
@@ -114,21 +126,53 @@ const RewardsScreen = () => {
             </View>
           )}
         </View>
-        <ProgressBar
-          progress={item.progress}
-          color={item.progress === 1 ? '#FFD700' : '#4CAF50'}
-          style={styles.progressBar}
-        />
       </TouchableOpacity>
-
+  
       {expandedReward === item.id && (
         <View style={styles.expandedContent}>
+          <Text style={styles.assignedText}>🎓 Assigned to student: {item.user_id ?? 'N/A'}</Text>
           <Text style={styles.description}>{item.description}</Text>
-          <TouchableOpacity style={styles.toggleButton} onPress={() => toggleProgress(item.id)}>
-            <Text style={styles.toggleText}>
-              {item.progress === 1 ? 'Mark as Incomplete' : 'Mark as Complete'}
-            </Text>
-          </TouchableOpacity>
+          <TouchableOpacity onPress={() => toggleProgress(item.id)} />
+          
+          {item.status === 'pending' && (
+            <TouchableOpacity
+              style={styles.startButton}
+              onPress={async () => {
+                try {
+                  const response = await fetch(`${BACKEND_URL}/quests/V1/createQuest`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      subject: item.title,
+                      title: item.title,
+                      description: item.description,
+                      user_id: 1,
+                      status: 'in progress',
+                    }),
+                  });
+              
+                  if (response.ok) {
+                    Alert.alert('✅ Success', `Quest "${item.title}" has been started!`);
+                    getQuests(); // Refresh the quest list
+                  } else {
+                    const errData = await response.json();
+                    console.error('❌ Failed to create quest:', errData);
+                    Alert.alert('❌ Error', errData.message || 'Failed to create quest.');
+                  }
+                } catch (error) {
+                  console.error('❌ Error creating quest:', error);
+                  Alert.alert('❌ Error', 'An unexpected error occurred.');
+                }
+              }}
+              
+              
+            >
+              <Text style={styles.startButtonText}>Start Quest</Text>
+            </TouchableOpacity>
+          )}
+  
           {item.progress === 1 && (
             <TouchableOpacity style={styles.redeemButton} onPress={() => redeemReward(item.title)}>
               <Text style={styles.redeemText}>Redeem</Text>
@@ -138,9 +182,10 @@ const RewardsScreen = () => {
       )}
     </View>
   );
-
-  const toCompleteRewards = rewards.filter((reward) => reward.progress < 1);
-  const completedRewards = rewards.filter((reward) => reward.progress === 1);
+  
+  const toCompleteRewards = rewards.filter((reward) => reward.status === 'pending' && reward.user_id === 0);
+    const inProgressRewards = rewards.filter((reward) => reward.status === 'assigned' || reward.status === 'in progress');
+  const completedRewards = rewards.filter((reward) => reward.status === 'completed');
 
   return (
     <View style={styles.container}>
@@ -148,6 +193,9 @@ const RewardsScreen = () => {
 
       <Text style={styles.sectionTitle}>To Complete</Text>
       <FlatList data={toCompleteRewards} keyExtractor={(item) => item.id} renderItem={renderRewardItem} />
+
+      <Text style={styles.sectionTitle}>In Progress</Text>
+      <FlatList data={inProgressRewards} keyExtractor={(item) => item.id} renderItem={renderRewardItem} />
 
       <Text style={styles.sectionTitle}>Completed</Text>
       <FlatList data={completedRewards} keyExtractor={(item) => item.id} renderItem={renderRewardItem} />
@@ -180,6 +228,12 @@ const styles = StyleSheet.create({
   notificationText: { color: '#fff', fontWeight: 'bold' },
   progressBar: { marginTop: 10, height: 10, borderRadius: 5 },
   expandedContent: { marginTop: 10 },
+  assignedText: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    color: '#555',
+    marginBottom: 4,
+  },
   description: { fontSize: 14, color: '#333', marginBottom: 10 },
   redeemButton: {
     backgroundColor: '#4CAF50',
@@ -189,15 +243,19 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   redeemText: { color: '#fff', fontWeight: 'bold' },
-  toggleButton: {
-    backgroundColor: '#2196F3',
+  toggleText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  startButton: {
+    backgroundColor: '#007BFF',
     padding: 10,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 10,
   },
-  toggleText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  startButtonText: { 
+    color: '#fff', 
+    fontWeight: 'bold' 
   },
 });

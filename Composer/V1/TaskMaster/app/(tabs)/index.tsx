@@ -10,7 +10,7 @@ import * as SecureStore from 'expo-secure-store';
 //  Ter atenção:
 //  - Backend_URL
 //  - ID do projeto -> app.json/expo-> extra->eas->projectID
-const BACKEND_URL = 'http://192.168.0.15:8000';
+const BACKEND_URL = 'http://192.168.1.99:8001';
 
 
 export default function HomeScreen() {
@@ -75,11 +75,22 @@ export default function HomeScreen() {
         console.log('✅ Notificação enviada com sucesso:', data.message);
       } else {
         console.error('❌ Erro ao enviar notificação:', data.detail);
+  
+        // ⚠️ VERIFICAÇÃO EXTRA: API Key inválida → apaga e gera nova
+        if (data.detail === "API Key inválida!") {
+          await SecureStore.deleteItemAsync('api_key');
+          console.log('🔑 API Key inválida removida. A gerar nova...');
+          const novaKey = await gerarApiKey();
+          if (novaKey && token) {
+            await enviarNotificacao(novaKey, token, titulo, mensagem); // tenta de novo
+          }
+        }
       }
     } catch (err) {
       console.error('❌ Erro inesperado ao enviar notificação:', err);
     }
   }
+  
 
   //----------------------SÓ-PARA-TESTE------------------
   const handleSecretButtonPress = () => {
@@ -278,5 +289,3 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
 });
-
-

@@ -18,7 +18,7 @@ interface GitHubUser {
   email?: string;
 }
 
-const BASE_URL = 'http://10.236.227.2:8000';
+const BASE_URL = 'http://10.163.235.3:8002';
 
 const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
   const [userInfo, setUserInfo] = useState<GitHubUser | null>(null);
@@ -80,7 +80,7 @@ async function fetchGitHubUser(token: string) {
     console.log("users:", JSON.stringify(users, null, 2));
     const userList = users.ranking.map((user: { name: string; Email: string }) => ({
       name: user.name,
-      email: user.Email // Make sure to use "Email" with uppercase "E"
+      email: user.Email 
     }));
     
     console.log("User List:", userList);
