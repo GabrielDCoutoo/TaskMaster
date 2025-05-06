@@ -1,17 +1,29 @@
 from flask import Flask, request, jsonify
+from kafka import KafkaProducer
+import json
 
 app = Flask(__name__)
 
-@app.route('/nfc', methods=['POST'])
-def receive_nfc():
-    data = request.get_json()
-    
-    if "nfc_data" in data:
-        nfc_value = data["nfc_data"]
-        print(f"Received NFC Data: {nfc_value}")
-        return jsonify({"message": "NFC data received successfully!"}), 200
+producer = KafkaProducer(
+    bootstrap_servers='localhost:9092',
+    value_serializer=lambda v: json.dumps(v).encode('utf-8')
+)
 
-    return jsonify({"error": "No NFC data provided"}), 400
+@app.route('/nfc', methods=['POST'])
+def receive_nfc_tag():
+    print("📥 Headers recebidos:", dict(request.headers))
+    print("📥 Content-Type:", request.content_type)
+    print("📥 Raw body:", request.data)
+
+    if request.content_type and request.content_type.startswith("application/json"):
+        data = request.get_json(force=True, silent=True)
+        if data is None:
+            return jsonify({'error': 'Corpo JSON inválido'}), 400
+        print(f"📡 Tag recebida via HTTP: {data}")
+        producer.send('nfc_topic', value=data)
+        return jsonify({'message': 'Tag recebida e enviada para Kafka'}), 200
+    else:
+        return jsonify({'error': 'Unsupported Content-Type'}), 415
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000)
