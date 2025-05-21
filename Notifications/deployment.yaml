@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: app-notifications
-  namespace: prof
+  namespace: 103709
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: app-notifications
-        image: registry.deti:5000/prof/app-notifications:v1
+        image: registry.deti/103709/app-notifications:v1
         ports:
         - containerPort: 8000
 ---
@@ -23,7 +23,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: app-notifications-service
-  namespace: prof
+  namespace: 103709
 spec:
   selector:
     app: app-notifications
