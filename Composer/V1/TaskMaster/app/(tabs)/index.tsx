@@ -6,11 +6,13 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as SecureStore from 'expo-secure-store';
+import { BACKEND_URL } from '@/constants/constants';
+import { useLocalSearchParams } from 'expo-router';
+
 
 //  Ter atenção:
 //  - Backend_URL
 //  - ID do projeto -> app.json/expo-> extra->eas->projectID
-const BACKEND_URL = 'http://192.168.1.99:8001';
 
 
 export default function HomeScreen() {
@@ -19,6 +21,7 @@ export default function HomeScreen() {
   const [status, setStatus] = useState('A iniciar...');
   const [apiKey, setApiKey] = useState('');
   const [pressCount, setPressCount] = useState(0); //só para testar -> o teste seria carregar 5 vezes num botão e ver se recebe notificação após isso
+  const { login, name, email, avatar_url } = useLocalSearchParams();
 
 
 
@@ -186,13 +189,20 @@ export default function HomeScreen() {
     }
   }
   
+
   
   //--------------------------------------------------------------------------------------------------------
 
   return (
+    /*
     <ParallaxScrollView
       headerBackgroundColor={{ light: 'transparent', dark: 'transparent' }}
-      headerImage={<Image source={require('@/assets/images/header.png')} style={styles.reactLogo} />}>
+      headerImage={ 
+        <View style={styles.customHeader}>
+          <Text style={styles.headerTitle}>Home</Text>
+        </View>
+    }>
+  
       <View style={styles.container}>
         <View style={styles.buttonGrid}>
           <TouchableOpacity style={styles.button} onPress={handleApiRequest}>
@@ -226,11 +236,47 @@ export default function HomeScreen() {
         </View>
       </View>
     </ParallaxScrollView>
+    */
+    <View style={styles.container}>
+    <Text style={styles.title}>Welcome Student!</Text>
+
+    <Text style={styles.subtitle}>Stay on top of your assignments and progress</Text>
+
+    <View style={styles.buttonContainer}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push('/ranking')}>
+        <Text style={styles.buttonText}>View your student ranking</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push('/rewards')}>
+        <Text style={styles.buttonText}>Check Quest progress</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push('/profile')}>
+        <Text style={styles.buttonText}>View Profile</Text>
+      </TouchableOpacity>
+      <Text style={styles.label}>Token do Dispositivo:</Text>
+            <Text style={styles.code}>
+              {expoToken || 'A obter token...'}
+            </Text>
+            <Text style={styles.label}>API Key:</Text>
+            <Text style={styles.code}>
+              {apiKey || 'A obter api key...'}
+            </Text>
+    </View>
+  </View>
+
+   
     
   );
 }
 
-const styles = StyleSheet.create({
+/* const styles = StyleSheet.create({
   reactLogo: {
     height: 150,
     width: 420,
@@ -288,4 +334,72 @@ const styles = StyleSheet.create({
     height: 70,
     resizeMode: 'contain',
   },
+  customHeader: {
+    marginTop:50,
+    height: 70,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 0,
+  },
+  
+  headerTitle: {
+    fontSize: 28,
+    color: '#000',
+    fontWeight: 'bold',
+  },*/
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      paddingTop: 130,
+      paddingHorizontal: 20,
+      backgroundColor: '#fff',
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      marginBottom: 6,
+      color: '#333',
+    },
+    subtitle: {
+      fontSize: 16,
+      color: '#777',
+      marginBottom: 40,
+    },
+    buttonContainer: {
+      flex: 1,
+      marginTop: 20,
+      paddingTop: 20,
+      paddingHorizontal: 20,
+    },
+    button: {
+      backgroundColor: '#4CAF50',
+      padding: 14,
+      borderRadius: 10,
+      marginBottom: 20,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    buttonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    label: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      marginTop: 16,
+    },
+    code: {
+      fontSize: 14,
+      color: '#333',
+      backgroundColor: '#eaeaea',
+      padding: 8,
+      borderRadius: 5,
+      marginTop: 4,
+    },
 });

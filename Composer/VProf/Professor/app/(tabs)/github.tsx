@@ -177,22 +177,24 @@ export default function GitHubScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop:30,
+    marginTop: 45,
     padding: 16,
-    backgroundColor: '#121212',
+    backgroundColor: '#F5F7FA', // soft background
     justifyContent: 'flex-start',
     alignItems: 'center',
   },
   input: {
     backgroundColor: '#fff',
-    padding: 10,
-    width: '80%', // Ensure input takes up 80% of the container width
-    borderRadius: 8,
+    padding: 12,
+    width: '80%',
+    borderRadius: 10,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#DDD',
   },
   button: {
-    backgroundColor: '#808080',
-    width: '80%', // Make the button the same width as the input
+    backgroundColor: '#4A4A4A',
+    width: '80%',
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -200,12 +202,16 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 18,
     color: '#fff',
+    fontWeight: 'bold',
   },
   profileContainer: {
     marginTop: 15,
-    backgroundColor: '#121212',
+    backgroundColor: '#fff',
     alignItems: 'center',
     marginBottom: 20,
+    borderRadius: 12,
+    padding: 16,
+    elevation: 2,
   },
   avatar: {
     width: 100,
@@ -215,36 +221,43 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#2D2A32',
     marginTop: 10,
   },
   bio: {
-    color: '#bbb',
+    color: '#6E6D7A',
     textAlign: 'center',
     paddingHorizontal: 20,
+    marginTop: 5,
   },
   repoContainer: {
-    backgroundColor: '#CCCCCB',
-    padding: 12,
+    backgroundColor: '#FFFFFF',
+    padding: 16,
     marginVertical: 6,
-    borderRadius: 8,
-    marginBottom: 10,
+    borderRadius: 10,
     width: 350,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 5,
+    elevation: 1,
   },
   repoName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#03A9F4',
+    color: '#373A40',
+    marginBottom: 4,
   },
   repoDesc: {
-    color: '#fff',
-    marginBottom: 8,
+    color: '#999',
+    marginBottom: 10,
   },
   githubButton: {
-    backgroundColor: '#03A9F4',
-    padding: 8,
+    backgroundColor: '#2ECC71',
+    padding: 10,
     borderRadius: 6,
     alignItems: 'center',
+    marginBottom: 8,
   },
   githubButtonText: {
     color: '#fff',
@@ -254,32 +267,41 @@ const styles = StyleSheet.create({
   // Commit Details Styles
   commitContainer: {
     marginTop: 10,
-    backgroundColor: '#121212',
-    padding: 8,
-    borderRadius: 6,
+    backgroundColor: '#F7F9FB',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   commitMessage: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: '#2C3E50',
+    fontWeight: '600',
   },
   commitDate: {
-    color: '#bbb',
+    color: '#888',
+    fontSize: 12,
+    marginTop: 4,
   },
   commitAuthor: {
-    color: '#bbb',
+    color: '#888',
+    fontSize: 12,
+  },
+  commitLinkContainer: {
+    alignSelf: 'flex-start', // Keeps it as wide as the text
+    marginTop: 6,
   },
   commitLink: {
-    color: '#03A9F4',
+    color: '#4A4A4A',
     fontWeight: 'bold',
-    marginTop: 5,
-  },
+    textDecorationLine: 'underline',
 
+  },
   // Modal Styles
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.6)', // Dark overlay
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   modalContent: {
     backgroundColor: '#fff',
@@ -295,7 +317,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   modalButton: {
-    backgroundColor: '#E63946',
+    backgroundColor: '#E74C3C',
     padding: 10,
     borderRadius: 6,
     width: '50%',
@@ -306,6 +328,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   flatListContent: {
-    paddingBottom: 90, // Adds space at the bottom of the list to ensure the last item is visible
+    paddingBottom: 90,
   },
 });

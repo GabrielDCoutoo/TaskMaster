@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Switch, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Switch, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
 
 // Define a type for the task object
 interface Subject {
@@ -38,36 +38,35 @@ const QuestsTab = () => {
   return (
     <>
     <Stack.Screen options={{ title: 'Subjects' }} />
-    
-
-
-    <View style={styles.container}>
-      <Text style={styles.title}>Subjects</Text>
-      <FlatList
-        data={tasks}
-        renderItem={renderItem}
-        contentContainerStyle={styles.flatListContent}
-      />
-
-      
-    </View>
-    </>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <View style={styles.container}>
+        <Text style={styles.title}>Subjects</Text>
+        <FlatList
+          data={tasks}
+          renderItem={renderItem}
+          contentContainerStyle={styles.flatListContent}
+        />
+      </View>
+    </SafeAreaView>
+  </>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginTop:40,
+    marginTop:60,
     flex: 1,
-    paddingTop: 20,
     paddingHorizontal: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fff',
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 10,
     color: '#000',
+    justifyContent: 'center',
+    alignSelf: 'center',
   },
   taskContainer: {
     marginTop:15,
@@ -91,7 +90,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 10,
   },
   toggleLabel: {
     fontSize: 16,

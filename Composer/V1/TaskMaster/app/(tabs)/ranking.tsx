@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Stack } from 'expo-router';
+import { ranking_url } from '@/constants/constants';
 
 interface UserRank {
   rank: number;
@@ -8,7 +9,6 @@ interface UserRank {
   name: string;
   total_points: number;
 }
-const BASE_URL = 'http://192.168.1.99:8002';
 
 export default function RankingScreen() {
   const [ranking, setRanking] = useState<UserRank[]>([]);
@@ -18,7 +18,7 @@ export default function RankingScreen() {
   useEffect(() => {
     const fetchRanking = async () => {
       try {
-        const response = await fetch(`${BASE_URL}/v1/users/`, {
+        const response = await fetch(`${ranking_url}/v1/users/`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

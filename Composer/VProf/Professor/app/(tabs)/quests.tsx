@@ -1,17 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  ActivityIndicator,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  Modal,
-  TextInput,
-  Pressable,
-} from 'react-native';
-
+import {View,Text,FlatList,ActivityIndicator,StyleSheet,TouchableOpacity,Alert,Modal,TextInput,Pressable} from 'react-native';
+import { quest_url } from '@/constants/constants';
 interface Quest {
   id: number;
   subject: string;
@@ -20,6 +9,7 @@ interface Quest {
   user_id: number;
   status: string;
 }
+
 
 const QuestsScreen = () => {
   const [quests, setQuests] = useState<Quest[]>([]);
@@ -34,7 +24,7 @@ const QuestsScreen = () => {
 
   const fetchQuests = async () => {
     try {
-      const response = await fetch('http://192.168.1.190:8003/quests/V1/getQuests');
+      const response = await fetch(`${quest_url}/quests/V1/getQuests`);
       const data = await response.json();
       const filtered = data.filter((quest: Quest) => quest.user_id === 0);
       setQuests(filtered);
@@ -57,7 +47,7 @@ const QuestsScreen = () => {
     }
 
     try {
-      const response = await fetch('http://192.168.1.190:8003/quests/V1/createQuest', {
+      const response = await fetch(`${quest_url}/quests/V1/createQuest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -175,7 +165,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingHorizontal: 16,
-    paddingTop: 40,
+    paddingTop: 70,
     paddingBottom: 100,
   },
   card: {
@@ -196,7 +186,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#4CAF50',
     padding: 16,
     borderRadius: 20,
     position: 'absolute',

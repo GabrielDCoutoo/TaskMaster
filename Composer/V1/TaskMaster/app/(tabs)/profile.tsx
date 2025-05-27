@@ -8,6 +8,7 @@ import { useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage for logout
 import { replace } from 'expo-router/build/global-state/routing';
 
+
 NfcManager.start();
 
 const ProfileScreen = () => {
@@ -58,6 +59,8 @@ const ProfileScreen = () => {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.title}>Profile</Text>
+      
       <Image source={{ uri: Array.isArray(user.avatar_url) ? user.avatar_url[0] : user.avatar_url }} style={styles.avatar} />
       <Text style={styles.name}>{user.name || user.login}</Text>
       <Text style={styles.email}>{user.email || 'No email provided'}</Text>
@@ -82,25 +85,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#fff', // Dark mode background
   },
-  avatar: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    alignSelf:"flex-start",
-    left:110,
-    bottom:160
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
-    bottom:140
-  },
-  email: {
-    fontSize: 16,
-    color: '#bbb',
-    bottom: 130,
-  },
+  title: { 
+    fontSize: 28, 
+    fontWeight: 'bold', 
+    textAlign: 'center',
+    marginBottom: 100,
+    },
+    avatar: {
+      width: 200,
+      height: 200,
+      borderRadius: 100,
+      marginBottom: 20,
+    },
+    name: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: '#000',
+      marginBottom: 10,
+    },
+    email: {
+      fontSize: 16,
+      color: '#bbb',
+      marginBottom: 40,
+    },    
   button: {
     flexDirection: 'row',
     alignItems: 'center',

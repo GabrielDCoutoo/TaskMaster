@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
 import { router } from 'expo-router';
-
+import {BASE_URL} from '../../constants/constants'
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -18,7 +18,6 @@ interface GitHubUser {
   email?: string;
 }
 
-const BASE_URL = 'http://10.163.235.3:8002';
 
 const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
   const [userInfo, setUserInfo] = useState<GitHubUser | null>(null);
@@ -78,9 +77,9 @@ async function fetchGitHubUser(token: string) {
     const usersResponse = await fetch(`${BASE_URL}/v1/users/`, { method: 'GET' });
     const users = await usersResponse.json();
     console.log("users:", JSON.stringify(users, null, 2));
-    const userList = users.ranking.map((user: { name: string; Email: string }) => ({
+    const userList = users.ranking.map((user: { name: string; email: string }) => ({
       name: user.name,
-      email: user.Email 
+      email: user.email
     }));
     
     console.log("User List:", userList);
@@ -128,6 +127,8 @@ async function fetchGitHubUser(token: string) {
 
   return (
     <View style={styles.container}>
+       <Image source={require('../../assets/images/logo.png')} style={styles.logo} resizeMode="contain"/>
+
       <Text style={styles.title}>TaskMaster</Text>
 
       {userInfo && <Text style={styles.userText}>Welcome, {userInfo.login}!</Text>}
@@ -163,7 +164,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   button2: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#4CAF50',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -173,6 +174,11 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  logo: {
+    width: 150,
+    height: 150,
+    marginBottom: 20,
   },
 });
 

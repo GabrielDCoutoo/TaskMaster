@@ -11,6 +11,7 @@ import {
   TextInput,
   Pressable,
 } from 'react-native';
+import { student_quest_url } from '@/constants/constants';
 
 interface Quest {
   id: number;
@@ -20,7 +21,7 @@ interface Quest {
   user_id: number;
   status: string;
 }
-const quest_url = "http://192.168.1.190:8003";
+const quest_url = "http://192.168.43.98:8001";
 
 const QuestsScreen = () => {
   const [quests, setQuests] = useState<Quest[]>([]);
@@ -39,7 +40,7 @@ const QuestsScreen = () => {
 
   const fetchQuests = async () => {
     try {
-      const response = await fetch(`${quest_url}/quests/V1/getQuests`);
+      const response = await fetch(`${student_quest_url}/quests/V1/getQuests`);
       const data = await response.json();
       const filtered = data.filter((quest: Quest) => quest.user_id !== 0);
       setQuests(filtered);
@@ -62,7 +63,7 @@ const QuestsScreen = () => {
     }
 
     try {
-      const response = await fetch(`${quest_url}/quests/V1/createQuest`, {
+      const response = await fetch(`${student_quest_url}/quests/V1/createQuest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -95,9 +96,8 @@ const QuestsScreen = () => {
   const handleCompleteQuest = async (id: number) => {
     try {
       // Step 1: Fetch the current quest data
-      const response = await fetch(`${quest_url}/quests/${id}`);
+      const response = await fetch(`${student_quest_url}/quests/${id}`);
       if (!response.ok) throw new Error('Quest not found');
-      console.log(response);
   
       const quest = await response.json();
   
@@ -107,11 +107,12 @@ const QuestsScreen = () => {
         title: quest.title,
         description: quest.description,
         user_id: quest.user_id,
-        status: 'completed', // ✅ Only change status
+        status: 'completed',
+        expo_token: quest.expo_token, // preserve existing token
       };
   
       // Step 3: Send the updated quest to the backend
-      const updateResponse = await fetch(`${quest_url}/quests/${id}`, {
+      const updateResponse = await fetch(`${student_quest_url}/quests/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedQuest),
@@ -119,6 +120,19 @@ const QuestsScreen = () => {
   
       if (!updateResponse.ok) throw new Error('Failed to complete quest');
   
+      // Step 4: Send push notification
+      if (quest.expo_token) {
+        await fetch(`${quest_url}/send_notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_token: quest.expo_token,
+            title: 'Quest Completed',
+            message: 'Quest Completed',
+          }),
+        });
+      }
+      console.log("student expo token:", quest.expo_token)
       Alert.alert('Success', 'Quest completed!');
       fetchQuests(); // Refresh the list
     } catch (error) {
@@ -213,52 +227,6 @@ const QuestsScreen = () => {
               fetchQuests();
             }}
           />
-
-          {/* Create Quest Button */}
-          <TouchableOpacity style={styles.button} onPress={() => setModalVisible(true)}>
-            <Text style={styles.buttonText}>+ Create Quest</Text>
-          </TouchableOpacity>
-
-          {/* Modal */}
-          <Modal
-            animationType="slide"
-            transparent
-            visible={modalVisible}
-            onRequestClose={() => setModalVisible(false)}
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalView}>
-                <Text style={styles.modalTitle}>New Quest</Text>
-                <TextInput
-                  placeholder="Subject"
-                  value={subject}
-                  onChangeText={setSubject}
-                  style={styles.input}
-                />
-                <TextInput
-                  placeholder="Title"
-                  value={title}
-                  onChangeText={setTitle}
-                  style={styles.input}
-                />
-                <TextInput
-                  placeholder="Description"
-                  value={description}
-                  onChangeText={setDescription}
-                  style={[styles.input, { height: 80 }]}
-                  multiline
-                />
-                <View style={styles.modalButtons}>
-                  <Pressable onPress={() => setModalVisible(false)} style={styles.cancelButton}>
-                    <Text style={{ color: '#007AFF' }}>Cancel</Text>
-                  </Pressable>
-                  <Pressable onPress={handleCreateQuest} style={styles.confirmButton}>
-                    <Text style={{ color: 'white' }}>Create</Text>
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-          </Modal>
         </>
       )}
     </View>
@@ -383,7 +351,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sortButtonActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#4CAF50',
   },
   sortButtonText: {
     color: 'white',

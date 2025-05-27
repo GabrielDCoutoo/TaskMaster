@@ -3,8 +3,9 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react
 import { ProgressBar } from 'react-native-paper';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
+import {rewards_url} from '../../constants/constants'
+import { ScrollView } from 'react-native';
 
-const BACKEND_URL = 'http://192.168.1.190:8003';
 const api_key = "e93ab6df869a0d1a3c86eeb47e54e52daa7aad097203a340bdf8d0c25fa6fca0";
 
 type Reward = {
@@ -52,7 +53,7 @@ const RewardsScreen = () => {
 
   const enviarNotificacao = async (apiKey: string, token: string, titulo: string, mensagem: string) => {
     try {
-      const response = await fetch(`${BACKEND_URL}/send_notification?api_key=${apiKey}`, {
+      const response = await fetch(`${rewards_url}/send_notification?api_key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -95,7 +96,7 @@ const RewardsScreen = () => {
 
   const getQuests = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/quests/V1/getQuests`);
+      const response = await fetch(`${rewards_url}/quests/V1/getQuests`);
       const data = await response.json();
       console.log('Quests:', data);
 
@@ -139,7 +140,7 @@ const RewardsScreen = () => {
               style={styles.startButton}
               onPress={async () => {
                 try {
-                  const response = await fetch(`${BACKEND_URL}/quests/V1/createQuest`, {
+                  const response = await fetch(`${rewards_url}/quests/V1/createQuest`, {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json',
@@ -188,27 +189,49 @@ const RewardsScreen = () => {
   const completedRewards = rewards.filter((reward) => reward.status === 'completed');
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Rewards</Text>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    {/* Fixed Title */}
+    <Text style={styles.title}>Rewards</Text>
 
+    {/* Scrollable content below */}
+    <ScrollView contentContainerStyle={{ paddingBottom: 50 }}>
       <Text style={styles.sectionTitle}>To Complete</Text>
-      <FlatList data={toCompleteRewards} keyExtractor={(item) => item.id} renderItem={renderRewardItem} />
+      {toCompleteRewards.map((item) => (
+        <View key={item.id}>{renderRewardItem({ item })}</View>
+      ))}
 
       <Text style={styles.sectionTitle}>In Progress</Text>
-      <FlatList data={inProgressRewards} keyExtractor={(item) => item.id} renderItem={renderRewardItem} />
+      {inProgressRewards.map((item) => (
+        <View key={item.id}>{renderRewardItem({ item })}</View>
+      ))}
 
       <Text style={styles.sectionTitle}>Completed</Text>
-      <FlatList data={completedRewards} keyExtractor={(item) => item.id} renderItem={renderRewardItem} />
-    </View>
+      {completedRewards.map((item) => (
+        <View key={item.id}>{renderRewardItem({ item })}</View>
+      ))}
+    </ScrollView>
+  </View>
   );
 };
 
 export default RewardsScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 50, backgroundColor: '#f2f2f2' },
-  title: { fontSize: 26, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
-  sectionTitle: { fontSize: 20, fontWeight: '600', marginLeft: 16, marginTop: 20 },
+  container: { flex: 1, 
+    paddingTop: 50, 
+    backgroundColor: '#fff' 
+  },
+  title: { 
+    fontSize: 28, 
+    fontWeight: 'bold', 
+    textAlign: 'center',
+    marginTop: 60,
+    marginBottom: 20 
+    },
+  sectionTitle: { fontSize: 20, 
+    fontWeight: '600', 
+    marginLeft: 16, 
+    marginTop: 20 },
   rewardCard: {
     backgroundColor: '#fff',
     padding: 16,
@@ -217,24 +240,43 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     elevation: 3,
   },
-  rewardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  rewardTitle: { fontSize: 18, fontWeight: 'bold' },
+  rewardHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center' 
+  },
+  rewardTitle: { 
+    fontSize: 18, 
+    fontWeight: 'bold' 
+  },
   notificationBadge: {
     backgroundColor: 'red',
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  notificationText: { color: '#fff', fontWeight: 'bold' },
-  progressBar: { marginTop: 10, height: 10, borderRadius: 5 },
-  expandedContent: { marginTop: 10 },
+  notificationText: { 
+    color: '#fff', 
+    fontWeight: 'bold' 
+  },
+  progressBar: { marginTop: 10,
+     height: 10, 
+     borderRadius: 5 
+    },
+  expandedContent: { 
+    marginTop: 10 
+  },
   assignedText: {
     fontSize: 13,
     fontStyle: 'italic',
     color: '#555',
     marginBottom: 4,
   },
-  description: { fontSize: 14, color: '#333', marginBottom: 10 },
+  description: { 
+    fontSize: 14, 
+    color: '#333', 
+    marginBottom: 10 
+  },
   redeemButton: {
     backgroundColor: '#4CAF50',
     padding: 10,
@@ -242,7 +284,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
-  redeemText: { color: '#fff', fontWeight: 'bold' },
+  redeemText: { color: '#fff',
+     fontWeight: 'bold' 
+    },
   toggleText: {
     color: '#fff',
     fontWeight: 'bold',

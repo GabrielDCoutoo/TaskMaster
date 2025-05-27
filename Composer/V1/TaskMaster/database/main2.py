@@ -73,6 +73,7 @@ class Quest(Base):
     description = Column(Text, nullable=False)
     user_id = Column(Integer, default=0)
     status = Column(String, default="notSelected")
+    expo_token = Column(String, nullable=True)  # ✅ New column
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -102,6 +103,7 @@ class QuestCreate(BaseModel):
     description: str
     user_id: int = 0
     status: str = "pending"
+    expo_token: Optional[str] = None  # ✅ Included in request
 
 class QuestUpdate(BaseModel):
     subject: str
@@ -109,6 +111,7 @@ class QuestUpdate(BaseModel):
     description: str
     user_id: int = 0
     status: str = "pending"
+    expo_token: Optional[str] = None  # ✅ Included in update
 
 # ==============================================
 # USER ENDPOINTS
@@ -161,7 +164,8 @@ def get_quests(status: Optional[str] = Query(None), db: Session = Depends(get_db
         "title": q.title,
         "description": q.description,
         "user_id": q.user_id,
-        "status": q.status
+        "status": q.status,
+        "expo_token": q.expo_token  # ✅ Return token
     } for q in quests]
 
 @app.post("/quests/V1/createQuest", status_code=status.HTTP_201_CREATED)
@@ -178,7 +182,8 @@ def create_quest(quest: QuestCreate, db: Session = Depends(get_db)):
             "title": new_quest.title,
             "description": new_quest.description,
             "user_id": new_quest.user_id,
-            "status": new_quest.status
+            "status": new_quest.status,
+            "expo_token": new_quest.expo_token  # ✅ Include in response
         }
     }
 
@@ -201,9 +206,11 @@ def update_quest(quest_id: int, updated_quest: QuestUpdate, db: Session = Depend
             "title": quest.title,
             "description": quest.description,
             "user_id": quest.user_id,
-            "status": quest.status
+            "status": quest.status,
+            "expo_token": quest.expo_token  # ✅ Include in response
         }
     }
+
 @app.get("/quests/{quest_id}", status_code=status.HTTP_200_OK)
 def get_quest_by_id(quest_id: int, db: Session = Depends(get_db)):
     quest = db.query(Quest).filter(Quest.id == quest_id).first()
@@ -215,13 +222,13 @@ def get_quest_by_id(quest_id: int, db: Session = Depends(get_db)):
         "title": quest.title,
         "description": quest.description,
         "user_id": quest.user_id,
-        "status": quest.status
+        "status": quest.status,
+        "expo_token": quest.expo_token  # ✅ Include in response
     }
-
 
 # ==============================================
 # MAIN ENTRY POINT
 # ==============================================
 
 if __name__ == "__main__":
-    uvicorn.run("main2:app", host="192.168.1.99", port=8003, reload=True)
+    uvicorn.run("main2:app", host=" 10.163.235.3", port=8003, reload=True)
