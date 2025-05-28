@@ -1,0 +1,9 @@
+
+# v1-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: v1-config
+data:
+  API_BASE_URL: "https://api.exemplo.com"
+  GOOGLE_MAPS_API_KEY: "CHAVE_DO_GOOGLE_AQUI"

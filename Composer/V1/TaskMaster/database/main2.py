@@ -7,17 +7,18 @@ from typing import Optional
 import psycopg2
 from psycopg2 import sql
 import uvicorn
+import os
 
 # ==============================================
 # DATABASE SETUP
 # ==============================================
 
 DB_CONFIG = {
-    "user": "postgres",
-    "password": "rafa",
-    "host": "localhost",
-    "port": "5432",
-    "name": "composer"
+    "user": os.getenv("POSTGRES_USER", "postgres"),
+    "password": os.getenv("POSTGRES_PASSWORD", "rafa"),
+    "host": os.getenv("POSTGRES_HOST", "localhost"),
+    "port": os.getenv("POSTGRES_PORT", "5432"),
+    "name": os.getenv("POSTGRES_DB", "composer")
 }
 
 def create_database():
@@ -36,7 +37,7 @@ def create_database():
         exists = cursor.fetchone()
 
         if not exists:
-            cursor.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(DB_CONFIG["name"])))
+            cursor.execute(sql.SQL("CREATE DATABASE {}".format(sql.Identifier(DB_CONFIG["name"]))))
             print(f"Database {DB_CONFIG['name']} created successfully")
 
         cursor.close()
@@ -103,7 +104,7 @@ class QuestCreate(BaseModel):
     description: str
     user_id: int = 0
     status: str = "pending"
-    expo_token: Optional[str] = None  # ✅ Included in request
+    expo_token: Optional[str] = None
 
 class QuestUpdate(BaseModel):
     subject: str
@@ -111,7 +112,7 @@ class QuestUpdate(BaseModel):
     description: str
     user_id: int = 0
     status: str = "pending"
-    expo_token: Optional[str] = None  # ✅ Included in update
+    expo_token: Optional[str] = None
 
 # ==============================================
 # USER ENDPOINTS
@@ -152,7 +153,6 @@ def list_users(db: Session = Depends(get_db)):
 
 @app.get("/quests/V1/getQuests", status_code=status.HTTP_200_OK)
 def get_quests(status: Optional[str] = Query(None), db: Session = Depends(get_db)):
-    """List all quests or filter by status"""
     if status:
         quests = db.query(Quest).filter(Quest.status == status).all()
     else:
@@ -165,7 +165,7 @@ def get_quests(status: Optional[str] = Query(None), db: Session = Depends(get_db
         "description": q.description,
         "user_id": q.user_id,
         "status": q.status,
-        "expo_token": q.expo_token  # ✅ Return token
+        "expo_token": q.expo_token
     } for q in quests]
 
 @app.post("/quests/V1/createQuest", status_code=status.HTTP_201_CREATED)
@@ -183,7 +183,7 @@ def create_quest(quest: QuestCreate, db: Session = Depends(get_db)):
             "description": new_quest.description,
             "user_id": new_quest.user_id,
             "status": new_quest.status,
-            "expo_token": new_quest.expo_token  # ✅ Include in response
+            "expo_token": new_quest.expo_token
         }
     }
 
@@ -207,7 +207,7 @@ def update_quest(quest_id: int, updated_quest: QuestUpdate, db: Session = Depend
             "description": quest.description,
             "user_id": quest.user_id,
             "status": quest.status,
-            "expo_token": quest.expo_token  # ✅ Include in response
+            "expo_token": quest.expo_token
         }
     }
 
@@ -223,7 +223,7 @@ def get_quest_by_id(quest_id: int, db: Session = Depends(get_db)):
         "description": quest.description,
         "user_id": quest.user_id,
         "status": quest.status,
-        "expo_token": quest.expo_token  # ✅ Include in response
+        "expo_token": quest.expo_token
     }
 
 # ==============================================
@@ -231,4 +231,4 @@ def get_quest_by_id(quest_id: int, db: Session = Depends(get_db)):
 # ==============================================
 
 if __name__ == "__main__":
-    uvicorn.run("main2:app", host=" 10.163.235.3", port=8003, reload=True)
+    uvicorn.run("main2:app", host="0.0.0.0", port=8003, reload=True)

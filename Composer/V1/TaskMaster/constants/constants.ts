@@ -1,13 +1,11 @@
-// Student 
-// index.tsx
-export const BACKEND_URL = 'http://172.21.160.3:8001'; 
+import Constants from "expo-constants";
+import * as AuthSession from "expo-auth-session";
 
-//ranking.tsx
-export const ranking_url = 'http://172.21.160.3:8000';
+export const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || "http://localhost:8000";
 
-//rewards.tsx
-export const rewards_url = 'http://172.21.160.3:8001';
+export const GITHUB_CLIENT_ID = Constants.expoConfig?.extra?.githubClientId || "";
+export const GITHUB_REDIRECT_URI = Constants.expoConfig?.extra?.githubRedirectUri || AuthSession.makeRedirectUri();
 
-// authScreen.tsx
-export const BASE_URL = 'http://172.21.160.3:8000';
-
+export const UA_OAUTH_URL = Constants.expoConfig?.extra?.uaOauthUrl || "";
+export const UA_CLIENT_ID = Constants.expoConfig?.extra?.uaClientId || "";
+export const UA_REDIRECT_URI = Constants.expoConfig?.extra?.uaRedirectUri || AuthSession.makeRedirectUri();

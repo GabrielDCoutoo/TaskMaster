@@ -1,0 +1,6 @@
+env:
+  - name: GITHUB_CLIENT_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: github-secret
+        key: client_secret
