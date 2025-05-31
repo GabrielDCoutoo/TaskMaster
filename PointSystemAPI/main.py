@@ -64,6 +64,19 @@ class UserPointsResponse(BaseModel):
     total_points: int
     history: List[PointHistoryResponse]
 
+class BadgeDeleteRequest(BaseModel):
+    badge_id: int
+
+class BadgeResponse(BaseModel):
+    id: int
+    name: str
+    description: str
+    threshold: int
+    image_filename: str
+
+    class Config:
+        orm_mode = True
+
 models.Base.metadata.create_all(bind=engine)
 
 # Redireciona a root da API para os docs para ser mais fácil aceder aos endpoints
@@ -258,7 +271,7 @@ async def validate_api_key(api_key: str, db: Session = Depends(get_db)):
     return {"valid": True, "user_id": user.id}
 
 
-@app.post("/v1/create-badge")
+@app.post("/v1/badge")
 async def create_badge(
     name: str,
     threshold: int,
@@ -285,7 +298,7 @@ async def create_badge(
         "badge_id": badge.id
     }
 
-@app.post("/v1/assign-badges")
+@app.post("/v1/badge/assign")
 async def assign_badges(db: Session = Depends(get_db)):
     # Fetch all badges ordered from highest to lowest threshold
     badges = db.query(Badge).order_by(Badge.threshold.desc()).all()
@@ -321,6 +334,26 @@ async def assign_badges(db: Session = Depends(get_db)):
         "message": "Badges atribuídos com base nos pontos.",
         "updated": updated_users
     }
+
+
+@app.delete("/v1/badges/{badge_id}")
+def remove_badge(badge_id: int, db: Session = Depends(get_db)):
+    db_badge = db.query(Badge).filter(Badge.id == badge_id).first()
+    if db_badge is None:
+        raise HTTPException(status_code=404, detail="Badge não encontrado!")
+    try:
+        db.delete(db_badge)
+        db.commit()
+        return {"message": "Badge removido com sucesso!"}
+    except exc.SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Um erro ocorreu enquanto o badge era removido!")
+
+@app.get("/v1/badges", response_model=List[BadgeResponse])
+async def list_badges(db: Session = Depends(get_db)):
+    badges = db.query(Badge).all()
+    return badges
+
 
 @app.post("/v1/quests/")
 def create_quest(quest: QuestCreate, user_id: int, db: Session = Depends(get_db)):
