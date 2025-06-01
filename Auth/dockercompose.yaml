@@ -1,0 +1,90 @@
+version: '3.9'
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
+
+services:
+
+  nfc_consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nfc_consumer
+    command: python3 nfc_system_final/nfc_backend/kafka/consumer_nfc.py
+    volumes:
+      - .:/app
+    working_dir: /app
+    env_file:
+      - init.env
+    depends_on:
+      - kafka_nfc
+    dns:
+      - 8.8.8.8
+    restart: on-failure
+
+  auth_api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: auth_api
+    command: bash nfc_system_final/nfc_backend/entrypoint.sh
+    depends_on:
+      - ngrok_nfc
+    volumes:
+      - .:/app
+    working_dir: /app
+    env_file:
+      - init.env
+    ports:
+      - "5000:5000"
+
+  testnfc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: testnfc
+    command: bash nfc_system_final/nfc_backend/entrypoint.sh
+    depends_on:
+      - ngrok_nfc
+    volumes:
+      - .:/app
+    working_dir: /app
+    env_file:
+      - init.env
+    ports:
+      - "5001:5000"
+
+  ngrok_nfc:
+    image: ngrok/ngrok:latest
+    container_name: ngrok_nfc
+    command: http auth_api:5000
+    env_file:
+      - init.env
+    ports:
+      - "4040:4040"
+    restart: unless-stopped
+
+  kafka_nfc:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka_nfc
+    ports:
+      - "29092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper_nfc:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka_nfc:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+  zookeeper_nfc:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper_nfc
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181

@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testnfc
+  labels:
+    app: testnfc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: testnfc
+  template:
+    metadata:
+      labels:
+        app: testnfc
+    spec:
+      containers:
+        - name: testnfc
+          image: /testnfc:latest  # substituir pelo nome da imagem
+          command: ["python"]
+          args: ["testNFC.py"]
+          envFrom:
+            - configMapRef:
+                name: auth-config
