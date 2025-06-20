@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: auth-config
-  namespace: "103270"
+  namespace: taskMaster
 data:
   DATABASE_URL: postgresql://postgres:password@postgres-service:5432/PointSystemEGS
   KAFKA_BOOTSTRAP_SERVERS: kafka:9092

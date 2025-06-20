@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: consumer-nfc
+  namespace: taskMaster
   labels:
     app: consumer-nfc
 spec:
@@ -16,7 +17,7 @@ spec:
     spec:
       containers:
         - name: consumer
-          image: /consumer-nfc:latest
+          image: registry.deti/taskMaster/consumer-nfc:v1
           command: ["python"]
           args: ["consumer_nfc.py"]
           envFrom:
