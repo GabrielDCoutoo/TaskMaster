@@ -9,3 +9,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+
+# Ignorr o kubetcl
+PointSystemAPI/kubetcl/
+

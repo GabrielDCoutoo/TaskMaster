@@ -1,36 +1,43 @@
-version: '3.8'
+version: '3.9'
 
 services:
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    container_name: zookeeper
+  db:
+    image: postgres:15
+    container_name: postgres_egpoints
     restart: always
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-
-  kafka:
-    image: confluentinc/cp-kafka:latest
-    container_name: kafka
-    restart: always
-    depends_on:
-      - zookeeper
+      POSTGRES_DB: PointSystemEGS
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
     ports:
-      - "9092:9092"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: kafka-ui
-    restart: always
+  pointsystem:
+    build:
+      context: ./PointSystemAPI
+      dockerfile: Dockerfile
+    container_name: pointsystem_api
     depends_on:
-      - kafka
+      - db
+    env_file:
+      - ./PointSystemAPI/.env
     ports:
-      - "8080:8080"
-    environment:
-      KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      - "8001:8001"
+    volumes:
+      - ./PointSystemAPI:/app
 
+  notifications-api:
+    build:
+      context: ./Notifications
+      dockerfile: Dockerfile
+    container_name: notifications_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./Notifications:/app
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
